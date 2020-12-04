@@ -120,7 +120,7 @@ if [ "$1" = "check" ] || [ "$1" = "auto" ];then
 	    echo "" | tee -a $logfile
 	    echo "---------------------" | tee -a $logfile
           #`ip tuntap show` >> $logfile
-          if ["$service_id" != "0" ];then `sudo service openvpn status` >> $logfile; fi;
+          if [ "$service_id" != "0" ];then `sudo service openvpn status` >> $logfile; fi;
 	    echo "---------------------" | tee -a $logfile
 	    restartOpenvpn
 
@@ -140,7 +140,7 @@ if [ "$1" = "check" ] || [ "$1" = "auto" ];then
 	    echo "" | tee -a $logfile
 	    echo "---------------------" | tee -a $logfile
 #                `ip tuntap show` >> $logfile
-                if ["$service_id" != "0" ];then `sudo service openvpn status` >> $logfile; fi;
+                if [ "$service_id" != "0" ];then `sudo service openvpn status` >> $logfile; fi;
             echo "---------------------" | tee -a $logfile
 		restartOpenvpn
 
@@ -153,7 +153,7 @@ if [ "$1" = "check" ] || [ "$1" = "auto" ];then
 		echo "" | tee -a $logfile
 		echo "---------------------" | tee -a $logfile
 #                `ip tuntap show` >> $logfile
-                if ["$service_id" != "0" ];then `sudo service openvpn status` >> $logfile; fi;
+                if [ "$service_id" != "0" ];then `sudo service openvpn status` >> $logfile; fi;
 	        echo "---------------------" | tee -a $logfile
 		restartOpenvpn
 
@@ -165,7 +165,7 @@ if [ "$1" = "check" ] || [ "$1" = "auto" ];then
 	    echo "" | tee -a $logfile
 	    echo "---------------------" | tee -a $logfile
 #            `ip tuntap show` >> $logfile
-		if ["$service_id" != "0" ];then `sudo service openvpn status` >> $logfile; fi;
+		if [ "$service_id" != "0" ];then `sudo service openvpn status` >> $logfile; fi;
             echo "---------------------" | tee -a $logfile
 	    restartOpenvpn
 
