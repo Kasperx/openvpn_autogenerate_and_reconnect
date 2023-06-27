@@ -327,27 +327,8 @@ public class RegenerateOVPNConfigFile
         System.setProperty("java.awt.headless", "true");
         RegenerateOVPNConfigFile myobj = new RegenerateOVPNConfigFile();
         
-//    	try {
-//			LogManager.getLogManager().readConfiguration(new FileInputStream(
-//					System.getProperty("user.dir")+File.separator+"config"+File.separator+"log4j.properties"));
-//		} catch (Exception e1) {
-//			e1.printStackTrace();
-//		}
         String log4jConfigFile = System.getProperty("user.dir")+File.separator+"config"+File.separator+"log4j.xml";
-//        ConfigurationSource source = null;
-//		try {
-//			source = new ConfigurationSource(new FileInputStream(log4jConfigFile));
-//			Configurator.initialize(null, source);
-//		} catch (Exception e1) {
-//			e1.printStackTrace();
-//		}
 //        System.setProperty("log4j.configurationFile", log4jConfigFile);
-    	if(new File(log4jConfigFile).exists()) {
-    		logger.info("File found");
-    	} else {
-    		logger.info("File not found");
-    	}
-        
         // args = new String [1];
         // args[0] = "-h";
 
