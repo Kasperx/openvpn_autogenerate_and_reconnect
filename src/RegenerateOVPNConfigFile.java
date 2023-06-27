@@ -36,16 +36,16 @@ public class RegenerateOVPNConfigFile
          * if info file is empty (so all files were used already) -> read config files from folder and save to file 
          */
         if(list_configName == null
-             || list_configName.size() == 0)
+             || list_configName.size() == 0) {
             readConfigFilesFromFolder();
-        // if "fileNameWithAllConfigs" still exists and has only one name, delete it. Needed config file is already loaded
-        else if (list_configName.size() == 1)
-        {
-        	File file = new File(fileNameWithAllConfigs);
-        	if (file.exists())
-        		file.delete();
         }
-
+        // if "fileNameWithAllConfigs" still exists and has only one name, delete it. Needed config file is already loaded
+        else if (list_configName.size() == 1) {
+        	File file = new File(fileNameWithAllConfigs);
+        	if (file.exists()) {
+        		file.delete();
+        	}
+        }
         createNewOVPNFile();
     }
 
@@ -57,43 +57,37 @@ public class RegenerateOVPNConfigFile
 
         ///////////////////////////////////////////////////////////////////
         // Reading config file, saving names to list
-        if(file.exists())
-        {
+        if (file.exists()) {
+        	
             long lastModified_ = file.lastModified();
             long now_ = Calendar.getInstance().getTimeInMillis();
             long diffInSecs = (now_ - lastModified_) / 1000;
             int hours = (int) (diffInSecs / 3600);
 
-            list_configName = new ArrayList();
+            list_configName = new ArrayList<String>();
             list_configName = loadFile(fileNameWithAllConfigs);
             System.out.println("Found information file: " + fileNameWithAllConfigs+ " with " + list_configName.size() + " files.");
 
-            if(hours > 59)
-                System.out.println("Last modification: " + (float) hours / 24+ " days ago");
-            else
+            if(hours > 59) {
+                System.out.println("Last modification: " + (float) hours / 24 + " days ago");
+            } else {
                 System.out.println("Last modification: " + hours + " hours ago");
-        }else
-        {
-            try
-            {
-                if(!file.createNewFile())
-                {
+            }
+            
+        } else {
+        	
+            try {
+                if(!file.createNewFile()) {
                     System.err.println("no information file created. Exit");
                     System.exit(0);
-                }else
+                } else {
                     System.out.println("Creating file: " + fileNameWithAllConfigs);
+                }
                 
-            }catch(Exception e)
-            {
-                System.err.println(e.toString());
+            } catch(Exception e) {
+                e.printStackTrace();
             }
         }
-
-        // delete old config. no, errors in routine will be visible in log file, but vpn has to be active, no matter with which file
-        // oldFile = new File(newConfig);
-        // if (oldFile.exists())
-        // oldFile.delete();
-
     }
 
     private void readConfigFilesFromFolder()
@@ -102,16 +96,16 @@ public class RegenerateOVPNConfigFile
 
         // Source:
         // https://stackoverflow.com/questions/1844688/how-to-read-all-files-in-a-folder-from-java
-        try
-        {
-            list_filesInFolder = new ArrayList();
-            list_configName = new ArrayList();
+        try {
+            list_filesInFolder = new ArrayList<File>();
+            list_configName = new ArrayList<String>();
             list_filesInFolder = 
-                    Files.walk(Paths.get(pathToConfigs))
-                        .filter(Files::isRegularFile).map(Path::toFile)
+                    Files
+                    	.walk(Paths.get(pathToConfigs))
+                        .filter(Files::isRegularFile)
+                        .map(Path::toFile)
                         .collect(Collectors.toList());
             System.out.println("Found " + list_filesInFolder.size() + " files");
-
             // store fileNameWithAllConfigss to info file
             String allConfigs = "";
             for(File configName : list_filesInFolder)
@@ -119,12 +113,10 @@ public class RegenerateOVPNConfigFile
                 allConfigs += configName.toString() + "\n";
                 list_configName.add(configName.getAbsolutePath());
             }
-
             writeFile(fileNameWithAllConfigs, allConfigs);
 
-        }catch(Exception e)
-        {
-            System.err.println(e.toString());
+        } catch(Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -146,34 +138,32 @@ public class RegenerateOVPNConfigFile
 //                    random = new Random().nextInt(list_configName.size() - 1);
 //            }while(random < 0 || random >= list_configName.size());
 
-            if (list_configName != null)
+            if (list_configName != null) {
                 random = new Random().nextInt(list_configName.size() - 1);
+            }
             
             // delete info file if emtpy
-            if(list_configName == null
+            if (list_configName == null
                 || list_configName.size() == 0)
             {
                 System.out.println("All loaded config files used, Deleting info file. Will be recreated on next runtime");
-
-                if(file.exists() && file.delete())
+                if (file.exists() && file.delete()) {
                     System.out.println("File deleted.");
-                else
+                } else {
                     System.out.println("File does not exist.");
+                }
             }
-
             System.out.println("Get a random config (index: " + random + ") ... -> File: " + list_configName.get(random));
             newConfigName = list_configName.get(random);
             list_configName.remove(random);
-
             // write new file names to information file, but with one file (=name) less than before
-            for(String temp : list_configName)
+            for(String temp : list_configName) {
                 allConfigs += temp.toString() + "\n";
-            
+            }
             writeFile(fileNameWithAllConfigs, allConfigs);
             
-        } catch(Exception e)
-        {
-            System.err.println(e.toString());
+        } catch(Exception e) {
+            e.printStackTrace();
             return list_configName.get(0);
         }
         return newConfigName;
@@ -187,25 +177,22 @@ public class RegenerateOVPNConfigFile
         {
             // write new config file
             Files.copy(
-                    Paths.get(configName),
-                    Paths.get(newConfig),
-                    StandardCopyOption.REPLACE_EXISTING);
+            		Paths.get(configName),
+            		Paths.get(newConfig),
+            		StandardCopyOption.REPLACE_EXISTING);
 
             // Some config files dont need the login info, its already stored in key, so no need to replace
-            if(replaceLoginString)
-            {
+            if(replaceLoginString) {
                 // reading config file
                 List<String> fileContent = new ArrayList<>(
-                        Files.readAllLines(
-                        Paths.get(newConfig),
-                        StandardCharsets.UTF_8));
+                		Files.readAllLines(
+        				Paths.get(newConfig),
+        				StandardCharsets.UTF_8));
     
                     // Replacing line with login-data-txt-file
                     System.out.println("Replacing line with login info file");
-                    for(int i = 0; i < fileContent.size(); i++)
-                    {
-                        if(fileContent.get(i).equals("auth-user-pass"))
-                        {
+                    for(int i = 0; i < fileContent.size(); i++) {
+                        if(fileContent.get(i).equals("auth-user-pass")) {
                             fileContent.set(i,"auth-user-pass /etc/openvpn/user.txt");
                             break;
                         }
@@ -219,26 +206,22 @@ public class RegenerateOVPNConfigFile
                         StandardCharsets.UTF_8 // options
                 );
             }
-            
-        }catch(Exception e)
-        {
-            System.err.println(e.toString());
+        } catch(Exception e) {
+            e.printStackTrace();
         }
     }
 
     public static List<String> loadFile(String fpath)
     {
-        try
-        {
+        try {
             return new ArrayList<>(
                     Files.readAllLines(
                             Paths.get(fpath),
                             StandardCharsets.UTF_8)
                     );
 
-        }catch(Exception e)
-        {
-            System.err.println(e.toString());
+        } catch(Exception e) {
+            e.printStackTrace();
             return new ArrayList<String>();
         }
     }
@@ -271,44 +254,43 @@ public class RegenerateOVPNConfigFile
     // return(lines);
     // }
 
-    public static void closeData(String fname, FileReader finr,
-            BufferedReader finb)
+    public static void closeData(String fname, FileReader finr, BufferedReader finb)
     {
-        try
-        {
-            if(finb != null)
+        try {
+            if(finb != null) {
                 finb.close();
+            }
             if(finr != null)
+            {
                 finr.close();
-        }catch(IOException e)
-        {
-            System.err.println("#### Eingabefile " + fname
-                    + " kann nicht geschlossen werden: " + e);
+            }
+        } catch(IOException e) {
+//            System.err.println("#### File " + fname + " can not be closed: " + e);
+            e.printStackTrace();
         }
     }
 
     private static void writeFile(String file, String content)
     {
-        try
-        {
+        try {
             FileWriter fw = new FileWriter(file);
             BufferedWriter bw = new BufferedWriter(fw);
             bw.write(content);
             bw.flush();
             bw.close();
             fw.close();
-        }catch(Exception e)
-        {
-            System.err.println(e.toString());
+        } catch(Exception e) {
+            e.printStackTrace();
         }
     }
 
     private static boolean isNextPositionEndOfArray(String[] args, int position)
     {
-        if(args.length - 1 >= position + 1)
+        if(args.length - 1 >= position + 1) {
             return false;
-        else
+        } else {
             return true;
+        }
     }
 
     private String showHelp ()
@@ -335,13 +317,11 @@ public class RegenerateOVPNConfigFile
 
         ///////////////////////////////////////////////////////////////////
         // read all data from input
-        if(args.length == 0)
-        {
+        if(args.length == 0) {
             System.err.println("No input found. Exit...");
             System.exit(0);
         }
-        for(int i = 0; i < args.length; i++)
-        {
+        for(int i = 0; i < args.length; i++) {
             if(args.length == 1 && args[i].startsWith("-") && (
                     args[i].toLowerCase().contains("h")
                     || args[i].toLowerCase().contains("help")
@@ -352,31 +332,32 @@ public class RegenerateOVPNConfigFile
                 System.out.println(myobj.showHelp());
                 System.exit(0);
             }
-            if(args[i].equals("-path") && !isNextPositionEndOfArray(args, i))
+            if(args[i].equals("-path") && !isNextPositionEndOfArray(args, i)) {
                 pathToConfigs = args[i + 1];
-            if(args[i].equals("-replace"))
+            }
+            if(args[i].equals("-replace")) {
                 replaceLoginString = true;
+            }
         }
 
         try {
-        // Check input params
-        if(!new File(pathToConfigs).isDirectory())
-        {
-            System.err.println("Found input: " + pathToConfigs + ", but its not a directory. Exit");
-            System.exit(0);
-        }else
-            System.out.println("Found input: " + pathToConfigs);
-
-        }catch (Exception e) {
-            System.err.println(e.toString());
+	        // Check input params
+	        if(!new File(pathToConfigs).isDirectory()) {
+	            System.err.println("Found input: " + pathToConfigs + ", but its not a directory. Exit");
+	            System.exit(0);
+	        } else {
+	            System.out.println("Found input: " + pathToConfigs);
+	        }
+        } catch (Exception e) {
+            e.printStackTrace();
             System.exit(0);
         }
         
-        if(!replaceLoginString)
+        if(!replaceLoginString) {
             System.out.println("NOT replacing login string in config");
-        else
+        } else {
             System.out.println("Replacing login string in config");
-
+        }
         myobj.run();
     }
 }
