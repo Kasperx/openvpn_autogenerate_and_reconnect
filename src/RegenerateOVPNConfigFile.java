@@ -139,7 +139,11 @@ public class RegenerateOVPNConfigFile
 //            }while(random < 0 || random >= list_configName.size());
 
             if (list_configName != null) {
-                random = new Random().nextInt(list_configName.size() - 1);
+//                random = new Random().nextInt(list_configName.size() - 1);
+//                return (int) ((Math.random() * (max - min)) + min);
+                random = (int) ((Math.random() * (
+                		(list_configName.size() - 1) - 0)
+                		) + 0);
             }
             
             // delete info file if emtpy
