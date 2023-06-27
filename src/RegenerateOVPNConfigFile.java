@@ -147,10 +147,14 @@ public class RegenerateOVPNConfigFile
                 || list_configName.size() == 0)
             {
                 System.out.println("All loaded config files used, Deleting info file. Will be recreated on next runtime");
-                if (file.exists() && file.delete()) {
-                    System.out.println("File deleted.");
+                if (file.exists()) {
+                	if(file.delete()) {
+                		System.out.println("File deleted.");
+                	} else {
+                		System.err.println("File not deleted.");
+                	}
                 } else {
-                    System.out.println("File does not exist.");
+                	System.out.println("File does not exist.");
                 }
             }
             System.out.println("Get a random config (index: " + random + ") ... -> File: " + list_configName.get(random));
