@@ -1,0 +1,458 @@
+#!/bin/bash
+
+name_of_connection="open-vpn"
+
+if [ -z "$1" ] || [ "$1" = "-?" ]; then
+	if [  -z "$1" ];then echo "No input."; fi;
+	echo "Syntax: $0 [check | recreate | reconnect | auto | -?] [test]"
+	echo "###"
+	echo "Parameter:"
+	echo -e "'' or '-?'\t-\t= show this help, then exit"
+	echo -e "check	\t-\t= check internet & $name_of_connection connection, then exit"
+	echo -e "auto	\t-\t= check internet & $name_of_connection connection, exit in case of no internet, reconnect $name_of_connection otherwise (if $name_of_connection is not active), then exit"
+#	echo -e "check-normal	\t= check normal connection to be alive, then exit"
+#	echo -e "check-vpn	\t= check open-vpn connection to be alive, then exit"
+#	echo -e "check-or-reconnect	\t= check open-vpn connection to be alive, reconnect in case of problems *1"
+	echo -e "recreate \t-\t= recreate $name_of_connection config"
+	echo -e "reconnect \t-\t= reconnect $name_of_connection connection *1, ignore current status"
+	echo -e "recreate reconnect \t= recreate $name_of_connection config, then reconnect $name_of_connection connection *1"
+	echo -e "test \t\t-\t= shows console output"
+	echo -e "*1 \t\t-\t= Requirement: active internet connection!"
+	echo "Bye"
+	exit
+fi
+
+if [ -z "`whereis fping`" ];then
+	sudo apt install -y fping
+fi
+
+iface=`ifconfig | grep tun`
+#iface=`ip tuntap show`
+#echo "$iface"
+service=`service openvpn status`
+service_id=$?
+#echo $service_id
+
+# -n = string is not null
+# -z = string is null
+
+logfile=/home/pi/openvpn.log
+#logfile=openvpn.log
+#alias ping='ping -W 2 -I tun0 -c 1'
+#alias ping='fping -t500 -I tun0 -c 1'
+alias ping='timeout 2.0 ping -t500 -I tun0 -c 1'
+var=$1
+var2=$2
+var3=$3
+date=$(date +%d.%m.%Y-%H.%M)
+web_address_1="web.de"
+web_address_2="gmx.de"
+date="$(date +%d.%m.%Y-%H.%M)"
+
+
+function recreate {
+
+	echo "Recreate config: $(date +%d.%m.%Y-%H.%M)" | tee -a $logfile
+	export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-armhf/jre/bin/java
+	if [ "$1" = "-v" ]; then
+		sudo java -jar /scripte/RegenerateOVPNConfigFile.jar -path /etc/openvpn/configs 2>&1 | tee -a $logfile
+	else
+		sudo java -jar /scripte/RegenerateOVPNConfigFile.jar -path /etc/openvpn/configs >> $logfile 2>&1
+	fi
+
+}
+
+function reconnect {
+
+
+	if [ "$1" = "-v" ]; then
+	### 1st check connection
+	check_normal
+        status=$?
+        if [ $status -gt 0 ]; then
+                echo "No internet connection"
+		exit
+        fi
+	echo "Start: $(date +%d.%m.%Y-%H.%M)" | tee -a $logfile
+	echo "ip without open-vpn: " | tee -a $logfile
+	/home/pi/bin/ask_public_ip.sh | tee -a $logfile
+#	echo "tun info: '$iface'" | tee -a $logfile
+#	echo "" | tee -a $logfile
+#	echo "" | tee -a $logfile
+	echo "Stopping service open-vpn ... " | tee -a $logfile
+	sudo systemctl stop openvpn >/dev/null 2>&1
+	sleep 5
+	sudo killall openvpn >/dev/null 2>&1
+	sleep 10
+#	#test
+        echo "test to logfile $logfile"
+	echo "File has ". grep -Rl "curl" ./ -c ."count of lines"
+	echo "vpn restart  ... $(date '+%d.%m.%Y-%H.%M.%S')" | tee -a $logfile
+	echo "reconnect..." | tee -a $logfile
+	sudo systemctl start openvpn
+##	sudo openvpn --config /etc/openvpn/openvpn.conf >> /dev/null 2>&1 &
+#	# time for reconnect
+	sleep 20
+### test
+	echo "ip with open-vpn: " | tee -a $logfile
+	/home/pi/bin/ask_public_ip.sh | tee -a $logfile
+	echo "" | tee -a $logfile
+	echo "End" | tee -a $logfile
+	/home/pi/bin/dyndns_goip_update_ip.sh
+
+	else
+
+	### 1st check connection
+	check_normal
+        status=$?
+        if [ $status -gt 0 ]; then
+#                echo "No internet connection"
+		exit
+        fi
+	echo "Start: $(date +%d.%m.%Y-%H.%M)" >> $logfile 2>&1
+	echo "ip without open-vpn: " >> $logfile 2>&1
+#	echo "tun info: '$iface'" | tee -a $logfile
+#	echo "" | tee -a $logfile
+#	echo "" | tee -a $logfile
+	echo "Stopping service open-vpn ... " >> $logfile 2>&1
+	sudo systemctl stop openvpn >/dev/null 2>&1
+	sleep 5
+	sudo killall openvpn >/dev/null 2>&1
+	sleep 10
+	echo "vpn restart  ... $(date '+%d.%m.%Y-%H.%M.%S')" >> $logfile 2>&1
+	echo "reconnect..." >> $logfile 2>&1
+	sudo systemctl start openvpn
+	#echo "vpn restart  ... $(date '+%d.%m.%Y-%H.%M.%S')" >> $logfile 2>&1
+#	sudo openvpn --config /etc/openvpn/openvpn.conf >> /dev/null 2>&1 &
+	# time for reconnect
+	sleep 20
+#	echo "" >> $logfile
+	echo "ip with open-vpn: " >> $logfile 2>&1
+	/home/pi/bin/ask_public_ip.sh >> $logfile 2>&1
+	echo "" >> $logfile 2>&1
+	echo "End" >> $logfile 2>&1
+	/home/pi/bin/dyndns_goip_update_ip.sh
+
+	fi
+
+}
+
+#function check {
+#
+#}
+
+### check normal tcp connection
+function check_normal {
+
+#	if [ -n "`timeout 2.0 ping -I eth0 -c 1 web.de`" ] && [ -n "`timeout 2.0 ping -I eth0 -c 1 gmx.de`" ];then
+	if [ -n "`timeout 2.0 ping -I eth0 -c 1 ${web_address_1}`" ] && [ -n "`timeout 2.0 ping -I eth0 -c 1 ${web_address_2}`" ];then
+
+#		echo "Internet connected"
+		return 0
+
+	else
+
+#		echo "No internet connection"
+		return 1
+
+	fi
+}
+
+### check tun0 and tcp connection
+function check_openvpn {
+
+	# Interface tun0 available (= not null) ?
+#	if [ -z "$iface" ] && [ -z "`timeout 2.0 ping -I tun0 -c 1 ${web_address_1}`" ] && [ -z "`timeout 2.0 ping -I tun0 -c 1 ${web_address_2}`" ]; then
+	if [ -z "`timeout 2.0 ping -I tun0 -c 1 ${web_address_1}`" ] && [ -z "`timeout 2.0 ping -I tun0 -c 1 ${web_address_2}`" ]; then
+
+		if [ -z "$iface" ]; then
+
+#			echo "Something wrong with tun interface"
+
+			if [ `systemctl is-active openvpn` != "inactive" ]; then
+				echo "(Service open-vpn still alive. Stopping ... "
+				sudo systemctl stop openvpn
+			fi
+
+			return 1
+
+		elif [ -z "`timeout 2.0 ping -I tun0 -c 1 ${web_address_1}`" ] && [ -z "`timeout 2.0 ping -I tun0 -c 1 ${web_address_2}`" ]; then
+
+#			echo "interface alive, but vpn connection lost"
+			return 2
+
+		fi
+
+	# Interface tun0 available (= not null) and ping test successful?
+	elif [ -n "`timeout 2.0 ping -I tun0 -c 1 ${web_address_1}`" ] && [ -n "`timeout 2.0 ping -I tun0 -c 1 ${web_address_2}`" ];then
+
+#		echo "Everything ok, open-vpn connection alive"
+		return 0
+
+	# Interface tun0 available (= not null), but ping test not successful?
+#	elif [ -z "`timeout 2.0 ping -I tun0 -c 1 ${web_address_1}`" ] && [ -z "`timeout 2.0 ping -I tun0 -c 1 ${web_address_2}`" ];then
+#
+##		echo "interface alive, but vpn connection lost"
+#		return 2
+#
+	fi
+}
+
+function check_or_reconnect {
+
+	check_normal
+	status=$?
+
+	if [ $status -eq 0 ]; then
+		echo "Internet connected"
+
+		check_openvpn
+		status=$?
+		if [ $status -eq 0 ]; then
+			echo "Everything ok, open-vpn connection alive"
+		elif [ $status -eq 1 ]; then
+	                echo "Something wrong with tun interface"
+
+			if [ "$var" = "auto" ]; then
+				if [ "$2" = "-v" ]; then
+					reconnect -v
+				else
+					reconnect
+				fi
+			fi
+
+		elif [ $status -eq 2 ]; then
+	                echo "interface alive, but vpn connection lost"
+
+			if [ "$var" = "auto" ]; then
+				if [ "$2" = "-v" ]; then
+					reconnect -v
+				else
+					reconnect
+				fi
+			fi
+
+		fi
+
+	else
+		echo "No internet connection"
+	fi
+
+}
+
+function just_some_process {
+
+	# if tun0 and ping are alive, do nothing
+#	if [ -n "$iface" ] && [ -n "`ping web.de`" ] && [ -n "`ping gmx.de`" ];then
+	if [ -z "$iface" ];then
+#	if ([ ! $service_id -eq 0 ]);then
+
+#		echo "" | tee -a $logfile
+		echo "####################################################" | tee -a $logfile
+		echo "service status = $service_id" | tee -a $logfile
+		echo "something wrong with tun interface: $(date +%d.%m.%Y-%H.%M)" | tee -a $logfile
+	    	echo "Tun info: '$iface'" | tee -a $logfile
+#	    	echo "" | tee -a $logfile
+#	    	echo "---------------------" | tee -a $logfile
+            	#`ip tuntap show` >> $logfile
+#            	if [ "$service_id" != "0" ];then `sudo service openvpn status` >> $logfile; fi;
+#	    	echo "---------------------" | tee -a $logfile
+		if [ "$var" = "reconnect" ] || [ "$var" = "auto" ];then
+			restartOpenvpn
+		fi
+#	    	restartOpenvpn
+
+	elif [ -n "`timeout 2.0 ping -I tun0 -c 1 web.de`" ] && [ -n "`timeout 2.0 ping -I tun0 -c 1 gmx.de`" ];then
+
+		echo "Everything ok"
+		#sh /scripte/dyndns_goip_update_ip.sh
+#		exit
+		# if tun0 and ping are dead, reconnect
+#		elif [ -z "$iface" ] && [ -z "`ping web.de`" ] && [ -z "`ping gmx.de`" ];then
+#		elif [ -z "$iface" ] && [ -z "`timeout 2.0 ping -I tun0 -c 1 web.de`" ] && [ -z "`timeout 2.0 ping -I tun0 -c 1 gmx.de`" ];then
+
+#	    	echo "" | tee -a $logfile
+#	    	echo "something wrong with tun interface: $(date +%d.%m.%Y-%H.%M)" | tee -a $logfile
+#	    	echo "Tun info: '$iface'" | tee -a $logfile
+#	    	echo "" | tee -a $logfile
+#	    	echo "---------------------" | tee -a $logfile
+#                `ip tuntap show` >> $logfile
+#                if [ "$service_id" != "0" ];then `sudo service openvpn status` >> $logfile; fi;
+#            	echo "---------------------" | tee -a $logfile
+#		restartOpenvpn
+#            	if [ "$service_id" != "0" ];then
+#			restartOpenvpn reconnect
+#		fi
+
+	# if tun0 is alive and ping is dead, theres something wrong with the connection
+#	elif [ -n "$iface" ] && [ -z "`ping web.de`" ] && [ -z "`ping gmx.de`" ];then
+#	elif [ -n "$iface" ] && [ -z "`timeout 2.0 ping -I tun0 -c 1 web.de`" ] && [ -z "`timeout 2.0 ping -I tun0 -c 1 gmx.de`" ];then
+	elif [ -z "`timeout 2.0 ping -I tun0 -c 1 web.de`" ] && [ -z "`timeout 2.0 ping -I tun0 -c 1 gmx.de`" ];then
+
+#		echo "" | tee -a $logfile
+		echo "####################################################" | tee -a $logfile
+		echo "service status = $service_id" | tee -a $logfile
+		echo "interface alive, but vpn connection lost: $(date +%d.%m.%Y-%H.%M)" | tee -a $logfile
+#		echo "" | tee -a $logfile
+#		echo "---------------------" | tee -a $logfile
+#                `ip tuntap show` >> $logfile
+#                if [ "$service_id" != "0" ];then `sudo service openvpn status` >> $logfile; fi;
+#	        echo "---------------------" | tee -a $logfile
+#		restartOpenvpn
+		if [ "$var" = "reconnect" ] || [ "$var" = "auto" ];then
+                        restartOpenvpn
+                fi
+
+	else
+
+#		echo "" | tee -a $logfile
+		echo "####################################################" | tee -a $logfile
+		echo "service status = $service_id" | tee -a $logfile
+		echo "something wrong: $(date +%d.%m.%Y-%H.%M)" | tee -a $logfile
+		echo "Tun info: '$iface'" | tee -a $logfile
+#	        echo "" | tee -a $logfile
+#	        echo "---------------------" | tee -a $logfile
+#               `ip tuntap show` >> $logfile
+#		if [ "$service_id" != "0" ];then `sudo service openvpn status` >> $logfile; fi;
+#           	echo "---------------------" | tee -a $logfile
+#	     	restartOpenvpn
+		if [ "$var" = "reconnect" ] || [ "$var" = "auto" ];then
+                        restartOpenvpn
+                fi
+
+	fi
+
+}
+
+function restartOpenvpn {
+#echo $var
+#	if [ "$var" = "auto" ] || [ "$var" = "reconnect" ] || [ "$var" = "recreate" ];then
+
+# dont know y, but the main script does not work
+#sudo systemctl stop openvpn >/dev/null 2>&1
+#sudo killall openvpn
+
+#		export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-armhf/jre/bin/java
+
+#		if [ "$2" = "test" ] ;then
+		echo "Reconnecting... " | tee -a $logfile
+		if [ "$var2" = "test" ];then
+
+			echo "Start: $(date +%d.%m.%Y-%H.%M)" | tee -a $logfile
+			echo "ip without open-vpn: " | tee -a $logfile
+			/scripte/ask_public_ip.sh 2>&1 | tee -a $logfile
+#sleep 2
+#exit
+			echo "stopping open-vpn"
+			sudo systemctl stop openvpn >/dev/null 2>&1
+			sleep 5
+			sudo killall openvpn >/dev/null 2>&1
+			sleep 5
+#			sudo java -jar /scripte/RegenerateOVPNConfigFile.jar -path /etc/openvpn/configs 2>&1 | tee -a $logfile
+			#echo "vpn restart  ... $(date '+%d.%m.%Y-%H.%M.%S')" | tee -a $logfile
+			echo "reconnect..."
+			sudo systemctl start openvpn
+			#echo "vpn restart  ... $(date '+%d.%m.%Y-%H.%M.%S')" | tee -a $logfile
+		#   sudo openvpn --config /etc/openvpn/openvpn.conf &
+			# time for reconnect
+			sleep 20
+			echo "ip with open-vpn: " | tee -a $logfile
+			/scripte/ask_public_ip.sh 2>&1 | tee -a $logfile
+			echo "End" | tee -a $logfile
+			/scripte/dyndns_goip_update_ip.sh
+			systemctl status openvpn
+#		else
+		fi
+
+			echo "Start: $(date +%d.%m.%Y-%H.%M)" | tee -a $logfile
+			echo "ip without open-vpn: " | tee -a $logfile
+#			echo "tun info: '$iface'" | tee -a $logfile
+#			echo "" | tee -a $logfile
+#			echo "" | tee -a $logfile
+			sudo systemctl stop openvpn >/dev/null 2>&1
+			sleep 5
+			sudo killall openvpn >/dev/null 2>&1
+			sleep 10
+			#test
+                        echo "test to logfile $logfile"
+                        #test			/scripte/ask_public_ip.sh | tee -a $logfile
+#			if [ "$var" = "recreate" ];then
+#				sudo java -jar /scripte/RegenerateOVPNConfigFile.jar -path /etc/openvpn/configs | tee -a $logfile
+#			fi
+			echo "vpn restart  ... $(date '+%d.%m.%Y-%H.%M.%S')" | tee -a $logfile
+			echo "reconnect..." | tee -a
+			sudo systemctl start openvpn
+			#echo "vpn restart  ... $(date '+%d.%m.%Y-%H.%M.%S')" >> $logfile 2>&1
+		#	sudo openvpn --config /etc/openvpn/openvpn.conf >> /dev/null 2>&1 &
+			# time for reconnect
+			sleep 20
+#			echo "" >> $logfile
+			echo "ip with open-vpn: " | tee -a $logfile
+			/home/pi/bin/ask_public_ip.sh | tee -a $logfile
+			echo "" | tee -a $logfile
+			echo "End" | tee -a $logfile
+			/home/pi/bin/dyndns_goip_update_ip.sh
+#		fi
+#	fi
+}
+
+if [ "$var" = "check" ] || [ "$var" = "auto" ];then
+
+	if [ "$var" = "check" ];then
+		if [ "$var2" = "test" ];then
+			check_or_reconnect check -v
+		else
+			check_or_reconnect check
+		fi
+	elif [ "$var" = "auto" ];then
+		if [ "$var2" = "test" ];then
+			check_or_reconnect auto -v
+		else
+			check_or_reconnect auto
+		fi
+	fi
+
+#elif [ "$var" = "reconnect" ] || [ "$var" = "recreate" ];then
+elif [ "$var" = "reconnect" ];then
+
+	if [ "$var2" = "test" ];then
+		echo "####################################################" | tee -a $logfile
+		reconnect -v
+	else
+		echo "####################################################" >> $logfile 2>&1
+		reconnect
+	fi
+
+elif [ "$var" = "recreate" ];then
+
+	if [ "$var2" = "reconnect" ];then
+
+		if [ "$var3" = "test" ];then
+			echo "####################################################" | tee -a $logfile
+			recreate -v
+			reconnect -v
+		else
+			echo "####################################################" >> $logfile 2>&1
+			recreate
+			reconnect
+		fi
+
+	else
+
+		if [ "$var3" = "test" ];then
+			echo "####################################################" | tee -a $logfile
+			recreate -v
+		else
+			echo "####################################################" >> $logfile 2>&1
+			recreate
+		fi
+
+	fi
+
+else
+
+	echo "No valid input."
+
+fi
+
+exit
