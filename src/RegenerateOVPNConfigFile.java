@@ -2,6 +2,8 @@
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -13,8 +15,10 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
-import java.util.Random;
 import java.util.stream.Collectors;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class RegenerateOVPNConfigFile
 {
@@ -25,6 +29,9 @@ public class RegenerateOVPNConfigFile
 
     private static String pathToConfigs;
     private static boolean replaceLoginString = false;
+    
+//    static final Logger logger = Logger.getLogger(RegenerateOVPNConfigFile.class.getName());
+    static final Logger logger = LogManager.getLogger(RegenerateOVPNConfigFile.class);
 
     public RegenerateOVPNConfigFile(){}
     
@@ -52,7 +59,7 @@ public class RegenerateOVPNConfigFile
     private void readConfigFiles()
     {
 
-        System.out.println("Start. Make sure to have at least one ovpn-file in folder...");
+        logger.info("Start. Make sure to have at least one ovpn-file in folder...");
         File file = new File(fileNameWithAllConfigs);
 
         ///////////////////////////////////////////////////////////////////
@@ -66,22 +73,22 @@ public class RegenerateOVPNConfigFile
 
             list_configName = new ArrayList<String>();
             list_configName = loadFile(fileNameWithAllConfigs);
-            System.out.println("Found information file: " + fileNameWithAllConfigs+ " with " + list_configName.size() + " files.");
+            logger.info("Found information file: " + fileNameWithAllConfigs+ " with " + list_configName.size() + " files.");
 
             if(hours > 59) {
-                System.out.println("Last modification: " + (float) hours / 24 + " days ago");
+                logger.info("Last modification: " + (float) hours / 24 + " days ago");
             } else {
-                System.out.println("Last modification: " + hours + " hours ago");
+                logger.info("Last modification: " + hours + " hours ago");
             }
             
         } else {
         	
             try {
                 if(!file.createNewFile()) {
-                    System.err.println("no information file created. Exit");
+                    logger.info("no information file created. Exit");
                     System.exit(0);
                 } else {
-                    System.out.println("Creating file: " + fileNameWithAllConfigs);
+                    logger.info("Creating file: " + fileNameWithAllConfigs);
                 }
                 
             } catch(Exception e) {
@@ -92,7 +99,7 @@ public class RegenerateOVPNConfigFile
 
     private void readConfigFilesFromFolder()
     {
-        System.out.println("Reading config files from folder: '" + pathToConfigs + "'");
+        logger.info("Reading config files from folder: '" + pathToConfigs + "'");
 
         // Source:
         // https://stackoverflow.com/questions/1844688/how-to-read-all-files-in-a-folder-from-java
@@ -105,7 +112,7 @@ public class RegenerateOVPNConfigFile
                         .filter(Files::isRegularFile)
                         .map(Path::toFile)
                         .collect(Collectors.toList());
-            System.out.println("Found " + list_filesInFolder.size() + " files");
+            logger.info("Found " + list_filesInFolder.size() + " files");
             // store fileNameWithAllConfigss to info file
             String allConfigs = "";
             for(File configName : list_filesInFolder)
@@ -150,18 +157,18 @@ public class RegenerateOVPNConfigFile
             if (list_configName == null
                 || list_configName.size() == 0)
             {
-                System.out.println("All loaded config files used, Deleting info file. Will be recreated on next runtime");
+                logger.info("All loaded config files used, Deleting info file. Will be recreated on next runtime");
                 if (file.exists()) {
                 	if(file.delete()) {
-                		System.out.println("File deleted.");
+                		logger.info("File deleted.");
                 	} else {
-                		System.err.println("File not deleted.");
+                		logger.info("File not deleted.");
                 	}
                 } else {
-                	System.out.println("File does not exist.");
+                	logger.info("File does not exist.");
                 }
             }
-            System.out.println("Get a random config (index: " + random + ") ... -> File: " + list_configName.get(random));
+            logger.info("Get a random config (index: " + random + ") ... -> File: " + list_configName.get(random));
             newConfigName = list_configName.get(random);
             list_configName.remove(random);
             // write new file names to information file, but with one file (=name) less than before
@@ -198,7 +205,7 @@ public class RegenerateOVPNConfigFile
         				StandardCharsets.UTF_8));
     
                     // Replacing line with login-data-txt-file
-                    System.out.println("Replacing line with login info file");
+                    logger.info("Replacing line with login info file");
                     for(int i = 0; i < fileContent.size(); i++) {
                         if(fileContent.get(i).equals("auth-user-pass")) {
                             fileContent.set(i,"auth-user-pass /etc/openvpn/user.txt");
@@ -253,7 +260,7 @@ public class RegenerateOVPNConfigFile
     // }
     // catch (IOException e)
     // {
-    // System.err.println("#### Datei " + fpath + " kann nicht geöffnet werden:
+    // logger.info("#### Datei " + fpath + " kann nicht geöffnet werden:
     // " + e);
     // closeData(fpath, finr, finb);
     // lines.removeAllElements();
@@ -273,7 +280,7 @@ public class RegenerateOVPNConfigFile
                 finr.close();
             }
         } catch(IOException e) {
-//            System.err.println("#### File " + fname + " can not be closed: " + e);
+//            logger.info("#### File " + fname + " can not be closed: " + e);
             e.printStackTrace();
         }
     }
@@ -320,13 +327,34 @@ public class RegenerateOVPNConfigFile
         System.setProperty("java.awt.headless", "true");
         RegenerateOVPNConfigFile myobj = new RegenerateOVPNConfigFile();
         
+//    	try {
+//			LogManager.getLogManager().readConfiguration(new FileInputStream(
+//					System.getProperty("user.dir")+File.separator+"config"+File.separator+"log4j.properties"));
+//		} catch (Exception e1) {
+//			e1.printStackTrace();
+//		}
+        String log4jConfigFile = System.getProperty("user.dir")+File.separator+"config"+File.separator+"log4j.xml";
+//        ConfigurationSource source = null;
+//		try {
+//			source = new ConfigurationSource(new FileInputStream(log4jConfigFile));
+//			Configurator.initialize(null, source);
+//		} catch (Exception e1) {
+//			e1.printStackTrace();
+//		}
+//        System.setProperty("log4j.configurationFile", log4jConfigFile);
+    	if(new File(log4jConfigFile).exists()) {
+    		logger.info("File found");
+    	} else {
+    		logger.info("File not found");
+    	}
+        
         // args = new String [1];
         // args[0] = "-h";
 
         ///////////////////////////////////////////////////////////////////
         // read all data from input
         if(args.length == 0) {
-            System.err.println("No input found. Exit...");
+            logger.info("No input found. Exit...");
             System.exit(0);
         }
         for(int i = 0; i < args.length; i++) {
@@ -337,7 +365,7 @@ public class RegenerateOVPNConfigFile
                     )
                     )
             {
-                System.out.println(myobj.showHelp());
+                logger.info(myobj.showHelp());
                 System.exit(0);
             }
             if(args[i].equals("-path") && !isNextPositionEndOfArray(args, i)) {
@@ -351,20 +379,20 @@ public class RegenerateOVPNConfigFile
         try {
 	        // Check input params
 	        if(!new File(pathToConfigs).isDirectory()) {
-	            System.err.println("Found input: " + pathToConfigs + ", but its not a directory. Exit");
-	            System.exit(0);
+	            logger.info("Error: Found input: " + pathToConfigs + ", but its not a directory. Exit");
+	            System.exit(1);
 	        } else {
-	            System.out.println("Found input: " + pathToConfigs);
+	            logger.info("Found input: " + pathToConfigs);
 	        }
         } catch (Exception e) {
             e.printStackTrace();
-            System.exit(0);
+            System.exit(1);
         }
         
         if(!replaceLoginString) {
-            System.out.println("NOT replacing login string in config");
+            logger.info("NOT replacing login string in config");
         } else {
-            System.out.println("Replacing login string in config");
+            logger.info("Replacing login string in config");
         }
         myobj.run();
     }
