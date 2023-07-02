@@ -1,12 +1,7 @@
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
+package main.java.com.openvpn_autogenerate_and_reconnect;
+
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,7 +15,7 @@ import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class RegenerateOVPNConfigFile
+public class Main
 {
     private static String fileNameWithAllConfigs = "/etc/openvpn/fileWithAllConfigs.txt";
     private static String newConfig = "/etc/openvpn/openvpn.conf";
@@ -31,9 +26,9 @@ public class RegenerateOVPNConfigFile
     private static boolean replaceLoginString = false;
     
 //    static final Logger logger = Logger.getLogger(RegenerateOVPNConfigFile.class.getName());
-    static final Logger logger = LogManager.getLogger(RegenerateOVPNConfigFile.class);
+    static final Logger logger = LogManager.getLogger(Main.class);
 
-    public RegenerateOVPNConfigFile(){}
+    public Main(){}
     
     private void run()
     {
@@ -72,7 +67,7 @@ public class RegenerateOVPNConfigFile
             int hours = (int) (diffInSecs / 3600);
 
             list_configName = new ArrayList<String>();
-            list_configName = loadFile(fileNameWithAllConfigs);
+            list_configName = Tools.loadFile(fileNameWithAllConfigs);
             logger.info("Found information file: " + fileNameWithAllConfigs+ " with " + list_configName.size() + " files.");
 
             if(hours > 59) {
@@ -120,7 +115,7 @@ public class RegenerateOVPNConfigFile
                 allConfigs += configName.toString() + "\n";
                 list_configName.add(configName.getAbsolutePath());
             }
-            writeFile(fileNameWithAllConfigs, allConfigs);
+            Tools.writeFile(fileNameWithAllConfigs, allConfigs);
 
         } catch(Exception e) {
             e.printStackTrace();
@@ -175,7 +170,7 @@ public class RegenerateOVPNConfigFile
             for(String temp : list_configName) {
                 allConfigs += temp.toString() + "\n";
             }
-            writeFile(fileNameWithAllConfigs, allConfigs);
+            Tools.writeFile(fileNameWithAllConfigs, allConfigs);
             
         } catch(Exception e) {
             e.printStackTrace();
@@ -226,20 +221,20 @@ public class RegenerateOVPNConfigFile
         }
     }
 
-    public static List<String> loadFile(String fpath)
-    {
-        try {
-            return new ArrayList<>(
-                    Files.readAllLines(
-                            Paths.get(fpath),
-                            StandardCharsets.UTF_8)
-                    );
-
-        } catch(Exception e) {
-            e.printStackTrace();
-            return new ArrayList<String>();
-        }
-    }
+//    public static List<String> loadFile(String fpath)
+//    {
+//        try {
+//            return new ArrayList<>(
+//                    Files.readAllLines(
+//                            Paths.get(fpath),
+//                            StandardCharsets.UTF_8)
+//                    );
+//
+//        } catch(Exception e) {
+//            e.printStackTrace();
+//            return new ArrayList<String>();
+//        }
+//    }
 
     // public static Vector loadFileByLines(String fpath)
     // {
@@ -269,55 +264,55 @@ public class RegenerateOVPNConfigFile
     // return(lines);
     // }
 
-    public static void closeData(String fname, FileReader finr, BufferedReader finb)
-    {
-        try {
-            if(finb != null) {
-                finb.close();
-            }
-            if(finr != null)
-            {
-                finr.close();
-            }
-        } catch(IOException e) {
-//            logger.info("#### File " + fname + " can not be closed: " + e);
-            e.printStackTrace();
-        }
-    }
+//    public static void closeData(String fname, FileReader finr, BufferedReader finb)
+//    {
+//        try {
+//            if(finb != null) {
+//                finb.close();
+//            }
+//            if(finr != null)
+//            {
+//                finr.close();
+//            }
+//        } catch(IOException e) {
+////            logger.info("#### File " + fname + " can not be closed: " + e);
+//            e.printStackTrace();
+//        }
+//    }
 
-    private static void writeFile(String file, String content)
-    {
-        try {
-            FileWriter fw = new FileWriter(file);
-            BufferedWriter bw = new BufferedWriter(fw);
-            bw.write(content);
-            bw.flush();
-            bw.close();
-            fw.close();
-        } catch(Exception e) {
-            e.printStackTrace();
-        }
-    }
+//    private static void writeFile(String file, String content)
+//    {
+//        try {
+//            FileWriter fw = new FileWriter(file);
+//            BufferedWriter bw = new BufferedWriter(fw);
+//            bw.write(content);
+//            bw.flush();
+//            bw.close();
+//            fw.close();
+//        } catch(Exception e) {
+//            e.printStackTrace();
+//        }
+//    }
 
-    private static boolean isNextPositionEndOfArray(String[] args, int position)
-    {
-        if(args.length - 1 >= position + 1) {
-            return false;
-        } else {
-            return true;
-        }
-    }
+//    private static boolean isNextPositionEndOfArray(String[] args, int position)
+//    {
+//        if(args.length - 1 >= position + 1) {
+//            return false;
+//        } else {
+//            return true;
+//        }
+//    }
 
-    private String showHelp ()
+    private static void showHelp ()
     {
-        return "Description\n"
-        		+ "\tThis program can find ovpn-config-files from a specific folder,\n"
-        		+ "\tread a random file from it and regenerate a new ovpn-config-file to the ovpn-working-dir.\n"
-        		+ "Options:\n"
-                + "\t[-h|-help|-?] 	for help\n"
-                + "\t[-path]     	for specific directory of config files\n"
-                + "\t[-replace]  	for replace login string like 'auth <loginname>' in configfile\n"
-                + "Exit";
+//        logger.info("Description");
+        logger.info("This program can find ovpn-config-files from a specific folder, read a random file from it and regenerate a new ovpn-config-file to the ovpn-working-dir.");
+		logger.info("Options:");
+		logger.info("\t[-h|-help|-?] 	show this help and exit");
+		logger.info("\t[-path]     	specific directory of config files");
+		logger.info("\t[-replace]  	replace login string like 'auth <loginname>' in configfile");
+		logger.info("Exit");
+		System.exit(0);
     }
     
     public static void main(String[] args)
@@ -325,9 +320,9 @@ public class RegenerateOVPNConfigFile
         ///////////////////////////////////////////////////////////////////
         // telling java to really run headless, otherwise an exception is thrown
         System.setProperty("java.awt.headless", "true");
-        RegenerateOVPNConfigFile myobj = new RegenerateOVPNConfigFile();
+        Main myobj = new Main();
         
-        String log4jConfigFile = System.getProperty("user.dir")+File.separator+"config"+File.separator+"log4j.xml";
+//        String log4jConfigFile = System.getProperty("user.dir")+File.separator+"config"+File.separator+"log4j.xml";
 //        System.setProperty("log4j.configurationFile", log4jConfigFile);
         // args = new String [1];
         // args[0] = "-h";
@@ -346,34 +341,32 @@ public class RegenerateOVPNConfigFile
                     )
                     )
             {
-                logger.info(myobj.showHelp());
-                System.exit(0);
+                showHelp();
+//                System.exit(0);
             }
-            if(args[i].equals("-path") && !isNextPositionEndOfArray(args, i)) {
+            if(args[i].equals("-path") && !Tools.isNextPositionEndOfArray(args, i)) {
                 pathToConfigs = args[i + 1];
             }
             if(args[i].equals("-replace")) {
                 replaceLoginString = true;
             }
         }
-
         try {
 	        // Check input params
-	        if(!new File(pathToConfigs).isDirectory()) {
-	            logger.info("Error: Found input: " + pathToConfigs + ", but its not a directory. Exit");
-	            System.exit(1);
+	        if(new File(pathToConfigs).isDirectory()) {
+	        	logger.info("Found input: '" + pathToConfigs + "'");
 	        } else {
-	            logger.info("Found input: " + pathToConfigs);
+	        	logger.info("Error: Found input: '" + pathToConfigs + "', but its not a directory. Exit");
+	        	System.exit(1);
 	        }
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(1);
         }
-        
-        if(!replaceLoginString) {
-            logger.info("NOT replacing login string in config");
+        if(replaceLoginString) {
+        	logger.info("Replacing login string in config");
         } else {
-            logger.info("Replacing login string in config");
+        	logger.info("NOT replacing login string in config");
         }
         myobj.run();
     }
