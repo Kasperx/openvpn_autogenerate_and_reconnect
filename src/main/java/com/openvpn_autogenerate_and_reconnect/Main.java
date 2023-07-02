@@ -2,6 +2,7 @@
 package main.java.com.openvpn_autogenerate_and_reconnect;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -15,31 +16,39 @@ import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class Main
+public class Main extends Tools
 {
-    private static String fileNameWithAllConfigs = "/etc/openvpn/fileWithAllConfigs.txt";
-    private static String newConfig = "/etc/openvpn/openvpn.conf";
-    private static List<String> list_configName;
-    private static List<File> list_filesInFolder;
-
-    private static String pathToConfigs;
-    private static boolean replaceLoginString = false;
-    
-//    static final Logger logger = Logger.getLogger(RegenerateOVPNConfigFile.class.getName());
-    static final Logger logger = LogManager.getLogger(Main.class);
-
+//    private static String fileNameWithAllConfigs = "/etc/openvpn/fileWithAllConfigs.txt";
+//    private static String newConfig = "/etc/openvpn/openvpn.conf";
+//    private static List<String> list_configName;
+//    private static List<File> list_filesInFolder;
+//
+//    private static String pathToConfigs;
+//    private static boolean replaceLoginString = false;
+//    
+////    static final Logger logger = Logger.getLogger(RegenerateOVPNConfigFile.class.getName());
+	Main main;
+	
     public Main(){}
     
     private void run()
     {
-        readConfigFiles();
-
+    	main = this;
+//        logger = LogManager.getLogger(Main.class);
+        logger.info("Start. Make sure to have at least one ovpn-file in directory '" + pathToConfigs + "'");
+    	int statusConfig = main.readConfigFiles();
         /*
          * if info file is empty (so all files were used already) -> read config files from folder and save to file 
          */
-        if(list_configName == null
-             || list_configName.size() == 0) {
-            readConfigFilesFromFolder();
+    	int statusConfigFiles;
+        if(list_configName == null || list_configName.size() == 0) {
+//        	fileNameWithAllConfigs = main.readConfigFilesFromFolder();
+        	statusConfigFiles = main.readConfigFilesFromFolder();
+//        	calculateStatus(statusConfig, statusConfigFiles);
+        	if(statusConfig > 0 || statusConfigFiles > 0) {
+        		logger.error("Exit.");
+        		System.exit(1);
+        	}
         }
         // if "fileNameWithAllConfigs" still exists and has only one name, delete it. Needed config file is already loaded
         else if (list_configName.size() == 1) {
@@ -48,54 +57,67 @@ public class Main
         		file.delete();
         	}
         }
-        createNewOVPNFile();
+        main.createNewOVPNFile();
     }
 
-    private void readConfigFiles()
+    private int readConfigFiles()
     {
 
-        logger.info("Start. Make sure to have at least one ovpn-file in folder...");
         File file = new File(fileNameWithAllConfigs);
-
         ///////////////////////////////////////////////////////////////////
         // Reading config file, saving names to list
         if (file.exists()) {
         	
-            long lastModified_ = file.lastModified();
-            long now_ = Calendar.getInstance().getTimeInMillis();
-            long diffInSecs = (now_ - lastModified_) / 1000;
-            int hours = (int) (diffInSecs / 3600);
-
-            list_configName = new ArrayList<String>();
-            list_configName = Tools.loadFile(fileNameWithAllConfigs);
-            logger.info("Found information file: " + fileNameWithAllConfigs+ " with " + list_configName.size() + " files.");
-
-            if(hours > 59) {
-                logger.info("Last modification: " + (float) hours / 24 + " days ago");
-            } else {
-                logger.info("Last modification: " + hours + " hours ago");
-            }
-            
+        	long lastModified_ = file.lastModified();
+        	long now_ = Calendar.getInstance().getTimeInMillis();
+        	long diffInSecs = (now_ - lastModified_) / 1000;
+        	int hours = (int) (diffInSecs / 3600);
+        	
+//        	list_configName = new ArrayList<String>();
+        	list_configName = Tools.loadFile(fileNameWithAllConfigs);
+        	logger.info("Found information file: " + fileNameWithAllConfigs+ " with " + list_configName.size() + " files.");
+        	
+        	if(hours > 59) {
+        		logger.info("Last modification: " + (float) hours / 24 + " days ago");
+        	} else {
+        		logger.info("Last modification: " + hours + " hours ago");
+        	}
+        	return 0;
+        	
         } else {
         	
-            try {
-                if(!file.createNewFile()) {
-                    logger.info("no information file created. Exit");
-                    System.exit(0);
-                } else {
-                    logger.info("Creating file: " + fileNameWithAllConfigs);
-                }
-                
-            } catch(Exception e) {
-                e.printStackTrace();
-            }
+        	try {
+        		if(file.createNewFile()) {
+        			logger.info("Created file: '" + fileNameWithAllConfigs + "'.");
+        		} else {
+        			logger.info("File already exists: '" + fileNameWithAllConfigs + "'.");
+//                	logger.info("Exit.");
+//                	logger.info("No information file created. Exit");
+//        			System.exit(0);
+        		}
+        		return 0;
+        		
+        	} catch(IOException e) {
+        		logger.error("File '" + fileNameWithAllConfigs + "' does not exist and program has no permission to create this file.");
+//        		logger.error("Exit.");
+//        		System.exit(1);
+        		return 1;
+        	} catch(SecurityException e) {
+        		logger.error("Program has security problems on this file.");
+//        		logger.error("Exit");
+//        		System.exit(1);
+        		return 2;
+        	} catch(Exception e) {
+        		e.printStackTrace();
+//        		System.exit(1);
+        		return 3;
+        	}
         }
     }
 
-    private void readConfigFilesFromFolder()
+    private int readConfigFilesFromFolder()
     {
         logger.info("Reading config files from folder: '" + pathToConfigs + "'");
-
         // Source:
         // https://stackoverflow.com/questions/1844688/how-to-read-all-files-in-a-folder-from-java
         try {
@@ -107,18 +129,30 @@ public class Main
                         .filter(Files::isRegularFile)
                         .map(Path::toFile)
                         .collect(Collectors.toList());
-            logger.info("Found " + list_filesInFolder.size() + " files");
-            // store fileNameWithAllConfigss to info file
-            String allConfigs = "";
-            for(File configName : list_filesInFolder)
-            {
-                allConfigs += configName.toString() + "\n";
-                list_configName.add(configName.getAbsolutePath());
+            if(list_filesInFolder.size() > 0) {
+	            logger.info("Found " + list_filesInFolder.size() + " files");
+	            // store fileNameWithAllConfigss to info file
+	            String allConfigs = "";
+	            for(File configName : list_filesInFolder)
+	            {
+	                allConfigs += configName.toString() + "\n";
+	                list_configName.add(configName.getAbsolutePath());
+	            }
+	            Tools.writeFile(fileNameWithAllConfigs, allConfigs);
+//	            return fileNameWithAllConfigs;
+	            return 0;
+            
+            } else {
+            	
+            	logger.info("Directory '" + pathToConfigs + "' has no files.");
+//            	logger.info("Exit.");
+//            	return null;
+            	return 1;
+            	
             }
-            Tools.writeFile(fileNameWithAllConfigs, allConfigs);
-
         } catch(Exception e) {
             e.printStackTrace();
+            return 2;
         }
     }
 
@@ -149,9 +183,7 @@ public class Main
             }
             
             // delete info file if emtpy
-            if (list_configName == null
-                || list_configName.size() == 0)
-            {
+            if (list_configName == null || list_configName.size() == 0) {
                 logger.info("All loaded config files used, Deleting info file. Will be recreated on next runtime");
                 if (file.exists()) {
                 	if(file.delete()) {
@@ -174,7 +206,11 @@ public class Main
             
         } catch(Exception e) {
             e.printStackTrace();
-            return list_configName.get(0);
+            if(list_configName == null || list_configName.size() <= 0) {
+            	return null;
+            } else {
+            	return list_configName.get(0);
+            }
         }
         return newConfigName;
     }
@@ -303,15 +339,16 @@ public class Main
 //        }
 //    }
 
-    private static void showHelp ()
+    private void showHelp ()
     {
 //        logger.info("Description");
-        logger.info("This program can find ovpn-config-files from a specific folder, read a random file from it and regenerate a new ovpn-config-file to the ovpn-working-dir.");
-		logger.info("Options:");
-		logger.info("\t[-h|-help|-?] 	show this help and exit");
-		logger.info("\t[-path]     	specific directory of config files");
-		logger.info("\t[-replace]  	replace login string like 'auth <loginname>' in configfile");
-		logger.info("Exit");
+    	main.logger.info("This program can find ovpn-config-files from a specific folder, read a random file from it and regenerate a new ovpn-config-file to the ovpn-working-dir.");
+    	main.logger.info("Syntax: Main [-h|-?|-help] [-path] [-replace]");
+    	main.logger.info("Options:");
+    	main.logger.info("\t[-h|-help|-?] 	show this help and exit");
+    	main.logger.info("\t[-path]     	specific directory of config files");
+    	main.logger.info("\t[-replace]  	replace login string like 'auth <loginname>' in configfile");
+    	main.logger.info("Exit");
 		System.exit(0);
     }
     
@@ -320,8 +357,8 @@ public class Main
         ///////////////////////////////////////////////////////////////////
         // telling java to really run headless, otherwise an exception is thrown
         System.setProperty("java.awt.headless", "true");
-        Main myobj = new Main();
-        
+        Main main = new Main();
+        main.logger = LogManager.getLogger(Main.class);
 //        String log4jConfigFile = System.getProperty("user.dir")+File.separator+"config"+File.separator+"log4j.xml";
 //        System.setProperty("log4j.configurationFile", log4jConfigFile);
         // args = new String [1];
@@ -330,7 +367,7 @@ public class Main
         ///////////////////////////////////////////////////////////////////
         // read all data from input
         if(args.length == 0) {
-            logger.info("No input found. Exit...");
+        	main.logger.info("No input found. Exit...");
             System.exit(0);
         }
         for(int i = 0; i < args.length; i++) {
@@ -341,33 +378,41 @@ public class Main
                     )
                     )
             {
-                showHelp();
+                main.showHelp();
 //                System.exit(0);
             }
             if(args[i].equals("-path") && !Tools.isNextPositionEndOfArray(args, i)) {
-                pathToConfigs = args[i + 1];
+            	main.pathToConfigs = args[i + 1];
             }
             if(args[i].equals("-replace")) {
-                replaceLoginString = true;
+                main.replaceLoginString = true;
             }
         }
         try {
 	        // Check input params
-	        if(new File(pathToConfigs).isDirectory()) {
-	        	logger.info("Found input: '" + pathToConfigs + "'");
-	        } else {
-	        	logger.info("Error: Found input: '" + pathToConfigs + "', but its not a directory. Exit");
-	        	System.exit(1);
-	        }
+        	File file = new File(main.pathToConfigs);
+        	if(file.exists()) {
+		        if(file.isDirectory()) {
+		        	main.logger.info("Found directory: '" + main.pathToConfigs + "'.");
+		        } else {
+		        	main.logger.error("Directoryname '" + main.pathToConfigs + "' is not a directory.");
+		        	main.logger.error("Exit");
+		        	System.exit(1);
+		        }
+        	} else {
+        		main.logger.error("Directory '" + main.pathToConfigs + "' does not exist.");
+        		main.logger.error("Exit");
+        		System.exit(1);
+        	}
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(1);
         }
-        if(replaceLoginString) {
-        	logger.info("Replacing login string in config");
+        if(main.replaceLoginString) {
+        	main.logger.info("(Replacing login string in config)");
         } else {
-        	logger.info("NOT replacing login string in config");
+        	main.logger.info("(NOT replacing login string in config)");
         }
-        myobj.run();
+        main.run();
     }
 }
