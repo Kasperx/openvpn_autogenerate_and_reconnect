@@ -36,18 +36,13 @@ public class Main extends Tools
 	
     public Main(){}
     
-    private void exitWithError(String message) {
-    	logger.error(message);
-    	logger.error("Exit");
-    	System.exit(1);
-    }
     private void exitWithError() {
     	logger.error("Exit");
     	System.exit(1);
     }
     private void showInfo(String pathToConfigFiles, boolean replaceLoginString, String pathToConfigFile) {
 		logger.info("###");
-		logger.info("Parameter:");
+//		logger.info("Parameter:");
 //		logger.info("\tPath to config file: \t'"+pathToConfigFile+"'");
 //		logger.info("\tReplace login info in openvpn file: \t'"+replaceLoginString+"'");
 //		logger.info("\tPath to dir with config files: \t'"+pathToConfigFiles+"'");
@@ -114,25 +109,123 @@ public class Main extends Tools
 		}
 		run();
     }
-
+    private void runWithInfo(String pathToConfigFiles, boolean replaceLoginString, String pathToConfigFile) {
+    	
+    	main = this;
+    	String[] parameter = {
+				pathToConfigFiles,
+				pathToConfigFile,
+				"replaceLoginString",
+				"test"
+				};
+    	String [] value = new String [parameter.length];
+    	String [] info = new String [parameter.length];
+    	boolean [] status_success = new boolean [2];
+    	int [] i_status_success = new int [2];
+    	///////////////////////////////////////////////////////
+    	/* check input params */
+    	///////////////////////////////////////////////////////
+    	/* check directory with config files*/
+    	if((i_status_success[0] = checkDirectoryWithConfigFiles(pathToConfigFiles)) <= 0) {
+    		this.pathToConfigFiles = pathToConfigFiles;
+    		status_success[0] = true;
+    	} else {
+    		status_success[0] = false;
+//	    	exitWithError();
+    	}
+    	switch (i_status_success[0]) {
+    	case 0:
+    		value[0] = "Existing";
+    		break;
+    	case 1:
+    		value[0] = "Existing, but not a directory";
+    		break;
+		case 2:
+			value[0] = "Not existing";
+			break;
+		case 3:
+			value[0] = "Exception";
+			break;
+		case 4:
+			value[0] = "Existing, but has no files in it";
+			break;
+		default:
+			break;
+		}
+    	///////////////////////////////////////////////////////
+    	/* check config files*/
+    	if((i_status_success[1] = checkConfigFile(pathToConfigFile)) <= 0) {
+    		status_success[1] = true;
+    	} else {
+    		status_success[1] = false;
+    	}
+    	switch (i_status_success[1]) {
+    		case 0:
+    			value[1] = "(Right now) Existing, writeable";
+    			break;
+    		case 1:
+    			value[1] = "Not existing and program has no permission to create this file";
+    			break;
+    		case 2:
+    			value[1] = "Program has security problems on this file";
+    			break;
+    		case 3:
+    			value[1] = "Exception";
+    			break;
+    	}
+    	///////////////////////////////////////////////////////
+    	/* go on */
+    	for(boolean status: status_success) {
+    		if(!status) {
+    			exitWithError();
+    		}
+    	}
+    	this.replaceLoginString = replaceLoginString;
+    	value[2] = toString(replaceLoginString);
+    	value[3] = toString(test);
+    	///////////////////////////////////////////////////////
+    	/* get last mod time of file */
+    	int count = 0;
+    	if((count = countFiles(pathToConfigFiles)) == 0) {
+    		info[0] = "Containing no files";
+    	} else if(count == 1) {
+    		info[0] = "Containing 1 file";
+    	} else {
+    		info[0] = "Containing " + count + " files";
+    	}
+    	info[1] = getLastModTime(new File(pathToConfigFile));
+    	info[3] = "Run program and read info, but don't modify config file '"+openvpnConfigFile+"'";
+    	///////////////////////////////////////////////////////
+    	Table table = Table.create("").addColumns(
+						StringColumn.create("Parameter", parameter),
+						StringColumn.create("Value", value),
+						StringColumn.create("Discription", info)
+				);
+    	table.appendRow();
+		logger.info(table.print());
+    	run();
+    }
+    private int countFiles(String directory) {
+    	return getConfigFilesFromFolder(directory).size();
+    }
 	private int checkDirectoryWithConfigFiles(String pathToConfigFiles) {
 		File file = new File(pathToConfigFiles);
 		logger.info("Start. Make sure to have at least one ovpn-file in directory '" + file.getAbsolutePath() + "'");
 		try {
 	    	if(file.exists()) {
 		        if(file.isDirectory()) {
-		        	logger.info("Found directory: '" + file.getAbsolutePath() + "'.");
+//		        	logger.info("Found directory: '" + file.getAbsolutePath() + "'.");
 		        	if(hasDirFiles(file.getAbsolutePath())) {
 		        		return 0;
 		        	} else {
 		        		return 4;
 		        	}
 		        } else {
-		        	logger.error("Directoryname '" + file.getAbsolutePath() + "' is not a directory.");
+//		        	logger.error("Directoryname '" + file.getAbsolutePath() + "' is not a directory.");
 		        	return 1;
 		        }
 	    	} else {
-	    		logger.error("Directory '" + file.getAbsolutePath() + "' does not exist.");
+//	    		logger.error("Directory '" + file.getAbsolutePath() + "' does not exist.");
 	    		return 2;
 	    	}
 	    	
@@ -224,10 +317,9 @@ public class Main extends Tools
 //        	}
 //        }
 //    }
-    private List <String> getFilenameFromConfigfile()
-    {
-
-        File file = new File(fileNameWithAllConfigs);
+    private String getLastModTime(File file) {
+//    	File file = new File(fileNameWithAllConfigs);
+    	String text = null;
         ///////////////////////////////////////////////////////////////////
         // Reading config file, saving names to list
     	long lastModified_ = file.lastModified();
@@ -235,10 +327,27 @@ public class Main extends Tools
     	long diffInSecs = (now_ - lastModified_) / 1000;
     	int hours = (int) (diffInSecs / 3600);
     	if(hours > 59) {
-    		logger.info("Last modification: " + (float) hours / 24 + " days ago");
+    		text = "Last modification: " + (float) hours / 24 + " days ago";
     	} else {
-    		logger.info("Last modification: " + hours + " hours ago");
+    		text = "Last modification: " + hours + " hours ago";
     	}
+    	return text;
+    }
+    private List <String> getFilenameFromConfigfile()
+    {
+
+        File file = new File(fileNameWithAllConfigs);
+        ///////////////////////////////////////////////////////////////////
+        // Reading config file, saving names to list
+//    	long lastModified_ = file.lastModified();
+//    	long now_ = Calendar.getInstance().getTimeInMillis();
+//    	long diffInSecs = (now_ - lastModified_) / 1000;
+//    	int hours = (int) (diffInSecs / 3600);
+//    	if(hours > 59) {
+//    		logger.info("Last modification: " + (float) hours / 24 + " days ago");
+//    	} else {
+//    		logger.info("Last modification: " + hours + " hours ago");
+//    	}
     	return Tools.loadLinesFromConfigFile(fileNameWithAllConfigs);
 //    	logger.info("Found information file: " + fileNameWithAllConfigs+ " with " + list_configName.size() + " files.");
     	
@@ -251,29 +360,28 @@ public class Main extends Tools
     	// Reading config file, saving names to list
     	if (file.exists()) {
 //    		list_configName = Tools.loadFile(fileNameWithAllConfigs);
-    		logger.info("Found information file: " + fileNameWithAllConfigs + "'.");
+//    		logger.info("Found information file: " + fileNameWithAllConfigs + "'.");
     		this.fileNameWithAllConfigs = fileNameWithAllConfigs;
     		return 0;
     	} else {
     		try {
     			if(file.createNewFile()) {
-    				logger.info("Created file: '" + fileNameWithAllConfigs + "'.");
+//    				logger.info("Created file: '" + fileNameWithAllConfigs + "'.");
     			} else {
-    				logger.info("File already exists: '" + fileNameWithAllConfigs + "'.");
-    				return 2;
+//    				logger.info("File already exists: '" + fileNameWithAllConfigs + "'.");
     			}
     			this.fileNameWithAllConfigs = fileNameWithAllConfigs;
     			this.fileNameWithAllConfigs = fileNameWithAllConfigs;
     			return 0;
     		} catch(IOException e) {
-    			logger.error("File '" + fileNameWithAllConfigs + "' does not exist and program has no permission to create this file.");
-    			return 3;
+//    			logger.error("File '" + fileNameWithAllConfigs + "' does not exist and program has no permission to create this file.");
+    			return 1;
     		} catch(SecurityException e) {
-    			logger.error("Program has security problems on this file.");
-    			return 4;
+//    			logger.error("Program has security problems on this file.");
+    			return 2;
     		} catch(Exception e) {
     			e.printStackTrace();
-    			return 5;
+    			return 3;
     		}
     	}
     }
@@ -287,7 +395,7 @@ public class Main extends Tools
     }
     private List<File> getConfigFilesFromFolder(String pathToConfigFiles)
     {
-        logger.info("Reading config files from folder: '" + pathToConfigFiles + "'.");
+//        logger.info("Reading config files from folder: '" + pathToConfigFiles + "'.");
         // Source:
         // https://stackoverflow.com/questions/1844688/how-to-read-all-files-in-a-folder-from-java
         try {
@@ -300,7 +408,7 @@ public class Main extends Tools
                         .map(Path::toFile)
                         .collect(Collectors.toList());
             if(list_filesInFolder.size() > 0) {
-	            logger.info("Found " + list_filesInFolder.size() + " files.");
+//	            logger.info("Found " + list_filesInFolder.size() + " files.");
 	            // store fileNameWithAllConfigss to info file
 //	            String allConfigs = "";
                 List<File> list_configName = new ArrayList<>();
@@ -602,6 +710,7 @@ public class Main extends Tools
 //        } else {
 //        	main.logger.info("(NOT replacing login string in config)");
 //        }
-        main.run(pathToConfigFiles, replaceLoginString, pathToConfigFile);
+//        main.run(pathToConfigFiles, replaceLoginString, pathToConfigFile);
+        main.runWithInfo(pathToConfigFiles, replaceLoginString, pathToConfigFile);
     }
 }
