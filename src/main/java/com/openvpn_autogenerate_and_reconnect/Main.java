@@ -18,6 +18,9 @@ import javax.xml.crypto.Data;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import tech.tablesaw.api.StringColumn;
+import tech.tablesaw.api.Table;
+
 public class Main extends Tools
 {
 //    private static String fileNameWithAllConfigs = "/etc/openvpn/fileWithAllConfigs.txt";
@@ -45,10 +48,31 @@ public class Main extends Tools
     private void showInfo(String pathToConfigFiles, boolean replaceLoginString, String pathToConfigFile) {
 		logger.info("###");
 		logger.info("Parameter:");
-		logger.info("\tPath to config file: \t'"+pathToConfigFile+"'");
-		logger.info("\tReplace login info in openvpn file: \t'"+replaceLoginString+"'");
-		logger.info("\tPath to dir with config files: \t'"+pathToConfigFiles+"'");
+//		logger.info("\tPath to config file: \t'"+pathToConfigFile+"'");
+//		logger.info("\tReplace login info in openvpn file: \t'"+replaceLoginString+"'");
+//		logger.info("\tPath to dir with config files: \t'"+pathToConfigFiles+"'");
+		String[] line = {
+				pathToConfigFiles,
+				pathToConfigFile,
+				toString(replaceLoginString)
+				};
+		String[] text = {
+				"Path to dir with config files",
+				"Path to config file",
+				"Replace login info in openvpn file"
+				};
+		Table parameter =
+				Table
+				.create("\n\tParameter")
+				.addColumns(
+						StringColumn.create("Parameter", text),
+						StringColumn.create("Discription", line)
+				);
+		logger.info(parameter.print());
 		logger.info("###");
+    }
+    private String toString(boolean value) {
+    	return value ? "true" : "false";
     }
     private void run(String pathToConfigFiles, boolean replaceLoginString, String pathToConfigFile) {
 
