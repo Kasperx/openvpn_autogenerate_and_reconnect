@@ -13,6 +13,8 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import javax.xml.crypto.Data;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -31,14 +33,29 @@ public class Main extends Tools
 	
     public Main(){}
     
+    private void exitWithError(String message) {
+    	logger.error(message);
+    	logger.error("Exit");
+    	System.exit(1);
+    }
     private void exitWithError() {
     	logger.error("Exit");
     	System.exit(1);
     }
-    
-    private void run(String pathToConfigFiles, boolean replaceLoginString) {
+    private void showInfo(String pathToConfigFiles, boolean replaceLoginString, String pathToConfigFile) {
+		logger.info("###");
+		logger.info("Parameter:");
+		logger.info("\tPath to config file: \t'"+pathToConfigFile+"'");
+		logger.info("\tReplace login info in openvpn file: \t'"+replaceLoginString+"'");
+		logger.info("\tPath to dir with config files: \t'"+pathToConfigFiles+"'");
+		logger.info("###");
+    }
+    private void run(String pathToConfigFiles, boolean replaceLoginString, String pathToConfigFile) {
 
     	main = this;
+    	if(consoleOut) {
+    		showInfo(pathToConfigFiles, replaceLoginString, pathToConfigFile);
+    	}
     	boolean [] status_success = new boolean [2];
     	/**************************/
     	/* check input params */
@@ -53,7 +70,7 @@ public class Main extends Tools
 	    }
 	    /**************************/
 	    /* check config files*/
-	    if(checkConfigFile() <= 0) {
+	    if(checkConfigFile(pathToConfigFile) <= 0) {
 	    	status_success[1] = true;
 	    } else {
 	    	status_success[1] = false;
@@ -119,10 +136,13 @@ public class Main extends Tools
         		file.delete();
         	}
         } else if(list_configName.size() == 0) {
-        	List<File> temp = getConfigFilesFromFolder(pathToConfigFiles);
+        	list_filesInFolder = getConfigFilesFromFolder(pathToConfigFiles);
         	writeConfigFileNamesToConfig(fileNameWithAllConfigs, list_filesInFolder);
         }
-        main.createNewOVPNFile();
+        String newConfigName = getRandomFile(list_filesInFolder);
+        if(!test) {
+        	createNewOVPNFile(newConfigName);
+        }
     }
 
 //    private int readConfigFiles()
@@ -199,7 +219,7 @@ public class Main extends Tools
 //    	logger.info("Found information file: " + fileNameWithAllConfigs+ " with " + list_configName.size() + " files.");
     	
     }
-    private int checkConfigFile()
+    private int checkConfigFile(String fileNameWithAllConfigs)
     {
     	
     	File file = new File(fileNameWithAllConfigs);
@@ -208,6 +228,7 @@ public class Main extends Tools
     	if (file.exists()) {
 //    		list_configName = Tools.loadFile(fileNameWithAllConfigs);
     		logger.info("Found information file: " + fileNameWithAllConfigs + "'.");
+    		this.fileNameWithAllConfigs = fileNameWithAllConfigs;
     		return 0;
     	} else {
     		try {
@@ -217,6 +238,8 @@ public class Main extends Tools
     				logger.info("File already exists: '" + fileNameWithAllConfigs + "'.");
     				return 2;
     			}
+    			this.fileNameWithAllConfigs = fileNameWithAllConfigs;
+    			this.fileNameWithAllConfigs = fileNameWithAllConfigs;
     			return 0;
     		} catch(IOException e) {
     			logger.error("File '" + fileNameWithAllConfigs + "' does not exist and program has no permission to create this file.");
@@ -276,14 +299,13 @@ public class Main extends Tools
             return new ArrayList<File>();
         }
     }
-    private String getRandomFile()
+    private String getRandomFile(List<File> list_filesInFolder)
     {
         String newConfigName = "";
 
         try
         {
             // random number in between 0 (inclusive) and x.size (exclusive)
-            int random = 0;
             String allConfigs = "";
             File file = new File(fileNameWithAllConfigs);
             
@@ -294,17 +316,27 @@ public class Main extends Tools
 //                    random = new Random().nextInt(list_configName.size() - 1);
 //            }while(random < 0 || random >= list_configName.size());
 
-            if (list_configName != null) {
+            if (list_configName != null && list_configName.size() > 0) {
 //                random = new Random().nextInt(list_configName.size() - 1);
 //                return (int) ((Math.random() * (max - min)) + min);
-                random = (int) ((Math.random() * (
-                		(list_configName.size() - 1) - 0)
+            	int random = (int) ((Math.random() * (
+                		(list_filesInFolder.size() - 1) - 0)
                 		) + 0);
+                logger.info("Get a random config (index: " + random + ") ... -> File: " + list_configName.get(random));
+                newConfigName = list_configName.get(random);
+                list_configName.remove(random);
+                // write new file names to information file, but with one file (=name) less than before
+                for(String temp : list_configName) {
+                    allConfigs += temp.toString() + "\n";
+                }
+                Tools.writeFile(fileNameWithAllConfigs, allConfigs);
+            } else if (list_filesInFolder.size() == 1) {
+            	newConfigName = list_filesInFolder.get(0).getAbsolutePath();
             }
-            
             // delete info file if emtpy
-            if (list_configName == null || list_configName.size() == 0) {
-                logger.info("All loaded config files used, Deleting info file. Will be recreated on next runtime");
+//            if (list_configName == null || list_configName.size() == 0) {
+            else {
+                logger.info("All loaded config files used, Deleting info file '" + fileNameWithAllConfigs + "' (Will be recreated on next runtime).");
                 if (file.exists()) {
                 	if(file.delete()) {
                 		logger.info("File deleted.");
@@ -315,14 +347,6 @@ public class Main extends Tools
                 	logger.info("File does not exist.");
                 }
             }
-            logger.info("Get a random config (index: " + random + ") ... -> File: " + list_configName.get(random));
-            newConfigName = list_configName.get(random);
-            list_configName.remove(random);
-            // write new file names to information file, but with one file (=name) less than before
-            for(String temp : list_configName) {
-                allConfigs += temp.toString() + "\n";
-            }
-            Tools.writeFile(fileNameWithAllConfigs, allConfigs);
             
         } catch(Exception e) {
             e.printStackTrace();
@@ -335,16 +359,15 @@ public class Main extends Tools
         return newConfigName;
     }
 
-    private void createNewOVPNFile()
+    private void createNewOVPNFile(String newConfig)
     {
-        String configName = getRandomFile();
-
+//        String configName = getRandomFile(list_filesInFolder); 
         try
         {
             // write new config file
             Files.copy(
-            		Paths.get(configName),
             		Paths.get(newConfig),
+            		Paths.get(openvpnConfigFile),
             		StandardCopyOption.REPLACE_EXISTING);
 
             // Some config files dont need the login info, its already stored in key, so no need to replace
@@ -466,8 +489,9 @@ public class Main extends Tools
     	logger.info("Syntax: Main [-h|-?|-help] [-path] [-replace]");
     	logger.info("Options:");
     	logger.info("\t[-h|-help|-?] 	show this help and exit");
-    	logger.info("\t[-path]     	specific directory of config files");
-    	logger.info("\t[-replace]  	replace login string like 'auth <loginname>' in configfile");
+    	logger.info("\t[--path]     	specific directory of config files. Default = '" + this.pathToConfigFiles + "'");
+    	logger.info("\t[--config-file]     	specific directory of config file with names. Default = '" + this.fileNameWithAllConfigs + "'");
+    	logger.info("\t[-replace]  	replace login string like 'auth <loginname>' in configfile. Default = '" + this.replaceLoginString + "'");
     	logger.info("Exit");
 		System.exit(0);
     }
@@ -485,8 +509,23 @@ public class Main extends Tools
         // args[0] = "-h";
 
         String pathToConfigFiles = null;
+        String pathToConfigFile = null;
         boolean replaceLoginString = false;
         
+        ///////////////////////////////////////////////////////////////////
+        // find parameter -v
+    	for(int i = 0; i < args.length; i++) {
+    		if(args[i] == "-v") {
+    			main.consoleOut = true;
+    		}
+    	}
+    	///////////////////////////////////////////////////////////////////
+    	// find parameter test
+    	for(int i = 0; i < args.length; i++) {
+    		if(args[i].equalsIgnoreCase("test") || args[i].equalsIgnoreCase("-test")) {
+    			main.test = true;
+    		}
+    	}
         ///////////////////////////////////////////////////////////////////
         // read all data from input
         if(args.length == 0) {
@@ -504,11 +543,14 @@ public class Main extends Tools
                 main.showHelp();
 //                System.exit(0);
             }
-            if(args[i].equals("-path") && !Tools.isNextPositionEndOfArray(args, i)) {
+            if(args[i].equals("--path") && !Tools.isNextPositionEndOfArray(args, i)) {
             	pathToConfigFiles = args[i + 1];
             }
             if(args[i].equals("-replace")) {
                 replaceLoginString = true;
+            }
+            if(args[i].equals("--config-file") && !Tools.isNextPositionEndOfArray(args, i)) {
+            	pathToConfigFile = args[i + 1];
             }
         }
 //        try {
@@ -536,6 +578,6 @@ public class Main extends Tools
 //        } else {
 //        	main.logger.info("(NOT replacing login string in config)");
 //        }
-        main.run(pathToConfigFiles, replaceLoginString);
+        main.run(pathToConfigFiles, replaceLoginString, pathToConfigFile);
     }
 }
