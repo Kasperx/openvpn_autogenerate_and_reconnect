@@ -205,7 +205,7 @@ public class Tools extends DAO
 //        }
 //    }
 
-    public static List<String> loadFile(String fpath)
+    public static List<String> loadLinesFromConfigFile(String fpath)
     {
         try {
             return new ArrayList<>(
@@ -219,7 +219,6 @@ public class Tools extends DAO
             return new ArrayList<String>();
         }
     }
-
     // public static Vector loadFileByLines(String fpath)
     // {
     // Vector lines = new Vector();

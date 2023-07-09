@@ -13,7 +13,7 @@ public class DAO {
     public List<String> list_configName;
     public List<File> list_filesInFolder;
 
-    public String pathToConfigs;
+    public String pathToConfigFiles;
     public boolean replaceLoginString = false;
     
 //    static final Logger logger = Logger.getLogger(RegenerateOVPNConfigFile.class.getName());
