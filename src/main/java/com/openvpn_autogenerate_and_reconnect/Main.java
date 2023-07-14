@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 
 import javax.xml.crypto.Data;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -112,6 +113,12 @@ public class Main extends Tools
     private void runWithInfo(String pathToConfigFiles, boolean replaceLoginString, String pathToConfigFile) {
     	
     	main = this;
+    	if(StringUtils.isEmpty(pathToConfigFiles)) {
+    		pathToConfigFiles = this.pathToConfigFiles;
+    	}
+    	if(StringUtils.isEmpty(pathToConfigFile)) {
+    		pathToConfigFile = this.fileNameWithAllConfigs;
+    	}
     	String[] parameter = {
 				pathToConfigFiles,
 				pathToConfigFile,
@@ -175,11 +182,6 @@ public class Main extends Tools
     	}
     	///////////////////////////////////////////////////////
     	/* go on */
-    	for(boolean status: status_success) {
-    		if(!status) {
-    			exitWithError();
-    		}
-    	}
     	this.replaceLoginString = replaceLoginString;
     	value[2] = toString(replaceLoginString);
     	value[3] = toString(test);
@@ -203,6 +205,11 @@ public class Main extends Tools
 				);
     	table.appendRow();
 		logger.info(table.print());
+		for(boolean status: status_success) {
+    		if(!status) {
+    			exitWithError();
+    		}
+    	}
     	run();
     }
     private int countFiles(String directory) {
