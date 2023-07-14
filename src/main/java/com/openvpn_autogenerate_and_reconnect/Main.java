@@ -13,11 +13,9 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import javax.xml.crypto.Data;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import tech.tablesaw.api.StringColumn;
 import tech.tablesaw.api.Table;
@@ -242,7 +240,8 @@ public class Main extends Tools
 	    }
 	}
 	private boolean hasDirFiles(String dirPath) {
-		return getConfigFilesFromFolder(dirPath).size() > 0;
+//		return getConfigFilesFromFolder(dirPath).size() > 0;
+		return countFiles(dirPath) > 0;
 	}
     private void run()
     {
