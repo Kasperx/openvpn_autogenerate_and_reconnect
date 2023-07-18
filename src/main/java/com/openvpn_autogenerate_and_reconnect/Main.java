@@ -36,7 +36,9 @@ public class Main extends Tools
     public Main(){}
     
     private void exitWithError() {
-    	logger.error("Exit");
+    	if(consoleOut) {
+			logger.error("Exit");
+    	}
     	System.exit(1);
     }
     private void showInfo(String pathToConfigFiles, boolean replaceLoginString, String pathToConfigFile) {
@@ -102,9 +104,13 @@ public class Main extends Tools
 	    }
 		this.replaceLoginString = replaceLoginString;
 		if(this.replaceLoginString) {
-			logger.info("(Replacing login string in config)");
+			if(consoleOut) {
+				logger.info("(Replacing login string in config)");
+			}
 		} else {
-			logger.info("(NOT replacing login string in config)");
+			if(consoleOut) {
+				logger.info("(NOT replacing login string in config)");
+			}
 		}
 		run();
     }
@@ -215,7 +221,9 @@ public class Main extends Tools
     }
 	private int checkDirectoryWithConfigFiles(String pathToConfigFiles) {
 		File file = new File(pathToConfigFiles);
-		logger.info("Start. Make sure to have at least one ovpn-file in directory '" + file.getAbsolutePath() + "'");
+		if(consoleOut) {
+			logger.info("Start. Make sure to have at least one ovpn-file in directory '" + file.getAbsolutePath() + "'");
+		}
 		try {
 	    	if(file.exists()) {
 		        if(file.isDirectory()) {
@@ -235,7 +243,10 @@ public class Main extends Tools
 	    	}
 	    	
 	    } catch (Exception e) {
-	        e.printStackTrace();
+	    	if(consoleOut) {
+    			logger.error(e.getMessage());
+	    	}
+        	e.printStackTrace();
 	        return 3;
 	    }
 	}
@@ -255,12 +266,27 @@ public class Main extends Tools
         // if "fileNameWithAllConfigs" still exists and has only one name, delete it. Needed config file is already loaded
         if (list_configName.size() == 1) {
         	File file = new File(fileNameWithAllConfigs);
+        	if(consoleOut) {
+				logger.info("One known config file left. Recreating memory file '"+fileNameWithAllConfigs+"'.");
+        	}
         	if (file.exists()) {
         		file.delete();
         	}
-        } else if(list_configName.size() == 0) {
+//        	if(consoleOut) {
+//				logger.info("Creating memory file with file names.");
+//        	}
         	list_filesInFolder = getConfigFilesFromFolder(pathToConfigFiles);
-        	writeConfigFileNamesToConfig(fileNameWithAllConfigs, list_filesInFolder);
+        	if(!test) {
+        		writeConfigFileNamesToConfig(fileNameWithAllConfigs, list_filesInFolder);
+        	}
+        } else if(list_configName.size() == 0) {
+        	if(consoleOut) {
+				logger.info("Creating memory file with file names.");
+        	}
+        	list_filesInFolder = getConfigFilesFromFolder(pathToConfigFiles);
+        	if(!test) {
+        		writeConfigFileNamesToConfig(fileNameWithAllConfigs, list_filesInFolder);
+        	}
         }
         String newConfigName = getRandomFile(list_filesInFolder);
         if(!test) {
@@ -428,12 +454,16 @@ public class Main extends Tools
             
             } else {
             	
-            	logger.error("Directory '" + pathToConfigFiles + "' has no files.");
+            	if(consoleOut) {
+    				logger.error("Directory '" + pathToConfigFiles + "' has no files.");
+            	}
             	return new ArrayList<File>();
             	
             }
         } catch(Exception e) {
-            e.getMessage();
+        	if(consoleOut) {
+				e.getMessage();
+        	}
             e.printStackTrace();
             return new ArrayList<File>();
         }
@@ -461,7 +491,9 @@ public class Main extends Tools
             	int random = (int) ((Math.random() * (
                 		(list_filesInFolder.size() - 1) - 0)
                 		) + 0);
-                logger.info("Get a random config (index: " + random + ") ... -> File: " + list_configName.get(random));
+            	if(consoleOut) {
+    				logger.info("Get a random config (index: " + random + ") ... -> File: " + list_configName.get(random));
+            	}
                 newConfigName = list_configName.get(random);
                 list_configName.remove(random);
                 // write new file names to information file, but with one file (=name) less than before
@@ -475,22 +507,32 @@ public class Main extends Tools
             // delete info file if emtpy
 //            if (list_configName == null || list_configName.size() == 0) {
             else {
-                logger.info("All loaded config files used, Deleting info file '" + fileNameWithAllConfigs + "' (Will be recreated on next runtime).");
+            	if(consoleOut) {
+    				logger.info("All loaded config files used, Deleting info file '" + fileNameWithAllConfigs + "' (Will be recreated on next runtime).");
+            	}
                 if (file.exists()) {
                 	if(file.delete()) {
-                		logger.info("File deleted.");
+                		if(consoleOut) {
+            				logger.info("File deleted.");
+                		}
                 	} else {
-                		logger.info("File not deleted.");
+                		if(consoleOut) {
+            				logger.info("File not deleted.");
+                		}
                 	}
                 } else {
-                	logger.info("File does not exist.");
+                	if(consoleOut) {
+        				logger.info("File does not exist.");
+                	}
                 }
             }
             
         } catch(Exception e) {
-        	logger.error("list_configName == null? "+list_configName == null);
-        	logger.error("list_configName count of elements: "+list_configName.size());
-        	logger.error(e.getMessage());
+        	if(consoleOut) {
+				logger.error("list_configName == null? "+list_configName == null);
+				logger.error("list_configName count of elements: "+list_configName.size());
+        		logger.error(e.getMessage());
+        	}
             e.printStackTrace();
             if(list_configName == null || list_configName.size() <= 0) {
             	return null;
@@ -521,7 +563,9 @@ public class Main extends Tools
         				StandardCharsets.UTF_8));
     
                     // Replacing line with login-data-txt-file
-                    logger.info("Replacing line with login info file");
+                if(consoleOut) {
+    				logger.info("Replacing line with login info file");
+                }
                     for(int i = 0; i < fileContent.size(); i++) {
                         if(fileContent.get(i).equals("auth-user-pass")) {
                             fileContent.set(i,"auth-user-pass /etc/openvpn/user.txt");
@@ -538,10 +582,12 @@ public class Main extends Tools
                 );
             }
         } catch(Exception e) {
-        	logger.error("createNewOVPNFile:");
-        	logger.error("newconfig: "+newConfig+ new File(newConfig).exists());
-        	logger.error("openvpnConfigFile: "+openvpnConfigFile+ new File(openvpnConfigFile).exists());
-        	logger.error(e.getMessage());
+        	if(consoleOut) {
+				logger.error("createNewOVPNFile:");
+				logger.error("newconfig: '"+newConfig+ "', file exists? "+new File(newConfig).exists());
+        		logger.error("openvpnConfigFile: '"+openvpnConfigFile+ "', file exists? "+ new File(openvpnConfigFile).exists());
+        		logger.error(e.getMessage());
+        	}
             e.printStackTrace();
         }
     }
