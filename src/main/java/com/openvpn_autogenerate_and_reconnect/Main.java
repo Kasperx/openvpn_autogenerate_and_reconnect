@@ -433,6 +433,7 @@ public class Main extends Tools
             	
             }
         } catch(Exception e) {
+            e.getMessage();
             e.printStackTrace();
             return new ArrayList<File>();
         }
@@ -487,6 +488,9 @@ public class Main extends Tools
             }
             
         } catch(Exception e) {
+        	logger.error("list_configName == null? "+list_configName == null);
+        	logger.error("list_configName count of elements: "+list_configName.size());
+        	logger.error(e.getMessage());
             e.printStackTrace();
             if(list_configName == null || list_configName.size() <= 0) {
             	return null;
@@ -534,6 +538,10 @@ public class Main extends Tools
                 );
             }
         } catch(Exception e) {
+        	logger.error("createNewOVPNFile:");
+        	logger.error("newconfig: "+newConfig+ new File(newConfig).exists());
+        	logger.error("openvpnConfigFile: "+openvpnConfigFile+ new File(openvpnConfigFile).exists());
+        	logger.error(e.getMessage());
             e.printStackTrace();
         }
     }
@@ -641,15 +649,9 @@ public class Main extends Tools
         System.setProperty("java.awt.headless", "true");
         Main main = new Main();
         main.logger = LogManager.getLogger(Main.class);
-//        String log4jConfigFile = System.getProperty("user.dir")+File.separator+"config"+File.separator+"log4j.xml";
-//        System.setProperty("log4j.configurationFile", log4jConfigFile);
-        // args = new String [1];
-        // args[0] = "-h";
-
         String pathToConfigFiles = null;
         String pathToConfigFile = null;
         boolean replaceLoginString = false;
-        
         ///////////////////////////////////////////////////////////////////
         // find parameter -v
     	for(int i = 0; i < args.length; i++) {
@@ -691,31 +693,6 @@ public class Main extends Tools
             	pathToConfigFile = args[i + 1];
             }
         }
-//        try {
-//	        // Check input params
-//        	File file = new File(main.pathToConfigs);
-//        	if(file.exists()) {
-//		        if(file.isDirectory()) {
-//		        	main.logger.info("Found directory: '" + main.pathToConfigs + "'.");
-//		        } else {
-//		        	main.logger.error("Directoryname '" + main.pathToConfigs + "' is not a directory.");
-//		        	main.logger.error("Exit");
-//		        	System.exit(1);
-//		        }
-//        	} else {
-//        		main.logger.error("Directory '" + main.pathToConfigs + "' does not exist.");
-//        		main.logger.error("Exit");
-//        		System.exit(1);
-//        	}
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            System.exit(1);
-//        }
-//        if(main.replaceLoginString) {
-//        	main.logger.info("(Replacing login string in config)");
-//        } else {
-//        	main.logger.info("(NOT replacing login string in config)");
-//        }
 //        main.run(pathToConfigFiles, replaceLoginString, pathToConfigFile);
         main.runWithInfo(pathToConfigFiles, replaceLoginString, pathToConfigFile);
     }
