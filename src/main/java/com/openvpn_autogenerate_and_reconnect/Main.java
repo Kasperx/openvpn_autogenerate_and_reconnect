@@ -259,41 +259,83 @@ public class Main extends Tools
 //    	main = this;
 //        logger = LogManager.getLogger(Main.class);
 //        logger.info("Start. Make sure to have at least one ovpn-file in directory '" + pathToConfigFiles + "'");
-    	list_configName = getFilenameFromConfigfile();
-        /*
-         * if info file is empty (so all files were used already) -> read config files from folder and save to file 
-         */
-        // if "fileNameWithAllConfigs" still exists and has only one name, delete it. Needed config file is already loaded
-        if (list_configName.size() == 1) {
-        	File file = new File(fileNameWithAllConfigs);
-        	if(consoleOut) {
-				logger.info("One known config file left. Recreating memory file '"+fileNameWithAllConfigs+"'.");
-        	}
-        	if (file.exists()) {
-        		file.delete();
-        	}
+    	list_configNames = getFilenameFromConfigfile(fileNameWithAllConfigs);
+    	list_filesInFolder = getConfigFilesFromFolder(pathToConfigFiles);
+    	if(consoleOut) {
+    		logger.info("Found "+list_filesInFolder.size()+" files in folder "+pathToConfigFiles);
+    	}
+    	/*
+    	 * if info file is empty (so all files were used already) -> read config files from folder and save to file 
+    	 */
+    	list_configNames = getConfigFileListFromMemoryFile(list_configNames, list_filesInFolder);
+//        // if "fileNameWithAllConfigs" still exists and has only one name, delete it. Needed config file is already loaded
+//        if (list_configName.size() == 1) {
+//        	File file = new File(fileNameWithAllConfigs);
+//        	if(consoleOut) {
+//				logger.info("One known config file left. Recreating memory file '"+fileNameWithAllConfigs+"'.");
+//        	}
+//        	if (file.exists()) {
+//        		file.delete();
+//        	}
+//        	///////////////////////////////////////////////////////////////////
+//        	// read config files, write to memory file
+//        	list_filesInFolder = getConfigFilesFromFolder(pathToConfigFiles);
+//        	if(consoleOut) {
+//        		logger.info("Found "+list_filesInFolder.size()+" files in folder "+pathToConfigFiles);
+//        	}
+//        } else if(list_configName.size() == 0) {
+//        	File file = new File(fileNameWithAllConfigs);
+//        	if (file.exists()) {
+//        		file.delete();
+//        	}
 //        	if(consoleOut) {
 //				logger.info("Creating memory file with file names.");
 //        	}
-        	list_filesInFolder = getConfigFilesFromFolder(pathToConfigFiles);
-        	if(!test) {
-        		writeConfigFileNamesToConfig(fileNameWithAllConfigs, list_filesInFolder);
-        	}
-        } else if(list_configName.size() == 0) {
-        	if(consoleOut) {
-				logger.info("Creating memory file with file names.");
-        	}
-        	list_filesInFolder = getConfigFilesFromFolder(pathToConfigFiles);
-        	if(!test) {
-        		writeConfigFileNamesToConfig(fileNameWithAllConfigs, list_filesInFolder);
-        	}
-        }
-        String newConfigName = getRandomFile(list_filesInFolder);
+//        	///////////////////////////////////////////////////////////////////
+//        	// read config files, write to memory file
+//        	list_filesInFolder = getConfigFilesFromFolder(pathToConfigFiles);
+//        	if(consoleOut) {
+//        		logger.info("Found "+list_filesInFolder.size()+" files in folder "+pathToConfigFiles);
+//        	}
+//        } else {
+//        	// do nothing
+//        	;
+//        }
+//        if(!test) {
+//        	writeConfigFileNamesToConfig(fileNameWithAllConfigs, list_filesInFolder);
+//        }
+        String newConfigName = getRandomFile(fileNameWithAllConfigs, list_configNames);
         if(!test) {
         	createNewOVPNFile(newConfigName);
         }
     }
-
+    private List<File> getConfigFileListFromMemoryFile(List<File> list_configNames, List<File> list_filesInFolder) {
+    	// if "fileNameWithAllConfigs" still exists and has only one name, delete it. Needed config file is already loaded
+        if (list_configNames.size() == 1) {
+        	///////////////////////////////////////////////////////////////////
+        	// get last name from memoryfile
+        	writeFile(fileNameWithAllConfigs, "");
+        	///////////////////////////////////////////////////////////////////
+        	// read files from folder, write to memoryfile
+//        	list_filesInFolder = getConfigFilesFromFolder(pathToConfigFiles);
+        } else if(list_configNames.size() == 0) {
+        	writeFile(fileNameWithAllConfigs, "");
+        	///////////////////////////////////////////////////////////////////
+        	// read files from folder, write to memoryfile
+        	list_configNames = list_filesInFolder;
+        	writeFile(fileNameWithAllConfigs, convertToTextList(list_configNames));
+//        	if(consoleOut) {
+//        		logger.info("Found "+list_filesInFolder.size()+" files in folder "+pathToConfigFiles);
+//        	}
+        } else /* if(list_configName.size() > 1) */{
+        	// do nothing
+        	;
+        }
+//        if(!test) {
+//        	writeConfigFileNamesToConfig(fileNameWithAllConfigs, list_filesInFolder);
+//        }
+        return list_configNames;
+    }
 //    private int readConfigFiles()
 //    {
 //
@@ -365,25 +407,6 @@ public class Main extends Tools
     	}
     	return text;
     }
-    private List <String> getFilenameFromConfigfile()
-    {
-
-        File file = new File(fileNameWithAllConfigs);
-        ///////////////////////////////////////////////////////////////////
-        // Reading config file, saving names to list
-//    	long lastModified_ = file.lastModified();
-//    	long now_ = Calendar.getInstance().getTimeInMillis();
-//    	long diffInSecs = (now_ - lastModified_) / 1000;
-//    	int hours = (int) (diffInSecs / 3600);
-//    	if(hours > 59) {
-//    		logger.info("Last modification: " + (float) hours / 24 + " days ago");
-//    	} else {
-//    		logger.info("Last modification: " + hours + " hours ago");
-//    	}
-    	return Tools.loadLinesFromConfigFile(fileNameWithAllConfigs);
-//    	logger.info("Found information file: " + fileNameWithAllConfigs+ " with " + list_configName.size() + " files.");
-    	
-    }
     private int checkConfigFile(String fileNameWithAllConfigs)
     {
     	
@@ -423,6 +446,9 @@ public class Main extends Tools
         {
             allConfigs += configName.toString() + "\n";
         }
+    	if(consoleOut) {
+    		logger.info("Writing "+configFiles.size()+" filenames to memory file '"+fileNameWithAllConfigs+"'");
+    	}
         Tools.writeFile(fileNameWithAllConfigs, allConfigs);
     }
     private List<File> getConfigFilesFromFolder(String pathToConfigFiles)
@@ -432,7 +458,7 @@ public class Main extends Tools
         // https://stackoverflow.com/questions/1844688/how-to-read-all-files-in-a-folder-from-java
         try {
             list_filesInFolder = new ArrayList<File>();
-            list_configName = new ArrayList<String>();
+            list_configNames = new ArrayList<String>();
             list_filesInFolder = 
                     Files
                     	.walk(Paths.get(pathToConfigFiles))
@@ -468,7 +494,8 @@ public class Main extends Tools
             return new ArrayList<File>();
         }
     }
-    private String getRandomFile(List<File> list_filesInFolder)
+//    private String getRandomFile(List<File> list_filesInFolder)
+    private String getRandomFile(String fileNameWithAllConfigs, List<String> list_configName)
     {
         String newConfigName = "";
 
@@ -477,6 +504,7 @@ public class Main extends Tools
             // random number in between 0 (inclusive) and x.size (exclusive)
             String allConfigs = "";
             File file = new File(fileNameWithAllConfigs);
+//            list_configName = getFilenameFromConfigfile();
             
 //            do
 //            {
@@ -484,7 +512,7 @@ public class Main extends Tools
 //                    && list_configName.size() > 0)
 //                    random = new Random().nextInt(list_configName.size() - 1);
 //            }while(random < 0 || random >= list_configName.size());
-
+        	///////////////////////////////////////////////////////////////////
             if (list_configName != null && list_configName.size() > 0) {
 //                random = new Random().nextInt(list_configName.size() - 1);
 //                return (int) ((Math.random() * (max - min)) + min);
@@ -501,12 +529,12 @@ public class Main extends Tools
                     allConfigs += temp.toString() + "\n";
                 }
                 Tools.writeFile(fileNameWithAllConfigs, allConfigs);
+            ///////////////////////////////////////////////////////////////////
             } else if (list_filesInFolder.size() == 1) {
             	newConfigName = list_filesInFolder.get(0).getAbsolutePath();
-            }
-            // delete info file if emtpy
-//            if (list_configName == null || list_configName.size() == 0) {
-            else {
+            	Tools.writeFile(fileNameWithAllConfigs, "");
+        	///////////////////////////////////////////////////////////////////
+            } else /* if (list_filesInFolder.size() == 0) */ {
             	if(consoleOut) {
     				logger.info("All loaded config files used, Deleting info file '" + fileNameWithAllConfigs + "' (Will be recreated on next runtime).");
             	}

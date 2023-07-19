@@ -204,7 +204,39 @@ public class Tools extends DAO
 //            e.printStackTrace();
 //        }
 //    }
-
+	static List<File> getFilenameFromConfigfile(String fileNameWithAllConfigs)
+    {
+//        File file = new File(fileNameWithAllConfigs);
+        ///////////////////////////////////////////////////////////////////
+        // Reading config file, saving names to list
+//    	long lastModified_ = file.lastModified();
+//    	long now_ = Calendar.getInstance().getTimeInMillis();
+//    	long diffInSecs = (now_ - lastModified_) / 1000;
+//    	int hours = (int) (diffInSecs / 3600);
+//    	if(hours > 59) {
+//    		logger.info("Last modification: " + (float) hours / 24 + " days ago");
+//    	} else {
+//    		logger.info("Last modification: " + hours + " hours ago");
+//    	}
+    	return 	convertToFileList(
+    			loadLinesFromConfigFile(fileNameWithAllConfigs)
+    			);
+//    	logger.info("Found information file: " + fileNameWithAllConfigs+ " with " + list_configName.size() + " files.");
+    }
+    static List<File> convertToFileList(List<String> list) {
+    	List<File> files = new ArrayList<File>();
+    	for(String name: list) {
+    		files.add(new File(name));
+    	}
+    	return files;
+    }
+    static List<String> convertToTextList(List<File> list) {
+    	List<String> files = new ArrayList<>();
+    	for(File name: list) {
+    		files.add(name.getAbsolutePath());
+    	}
+    	return files;
+    }
     public static List<String> loadLinesFromConfigFile(String fpath)
     {
         try {
@@ -262,7 +294,13 @@ public class Tools extends DAO
             e.printStackTrace();
         }
     }
-
+    public static void writeFile(String file, List<String> content) {
+    	String text = "";
+    	for(String name: content) {
+    		text += name + "\n";
+    	}
+    	writeFile(file, text);
+    }
     public static void writeFile(String file, String content)
     {
         try {

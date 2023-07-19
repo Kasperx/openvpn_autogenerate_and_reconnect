@@ -10,7 +10,7 @@ public class DAO {
 
 	public String fileNameWithAllConfigs = "/etc/openvpn/fileWithAllConfigs.txt";
     public String openvpnConfigFile = "/etc/openvpn/openvpn.conf";
-    public List<String> list_configName;
+    public List<File> list_configNames;
     public List<File> list_filesInFolder;
 
     public String pathToConfigFiles = "/etc/openvpn/configs";
