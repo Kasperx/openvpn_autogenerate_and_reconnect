@@ -4,20 +4,16 @@ package main.java.com.openvpn_autogenerate_and_reconnect;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -204,7 +200,7 @@ public class Tools extends DAO
 //            e.printStackTrace();
 //        }
 //    }
-	static List<File> getFilenameFromConfigfile(String fileNameWithAllConfigs)
+	static List<String> getFilenameFromConfigfile(String fileNameWithAllConfigs)
     {
 //        File file = new File(fileNameWithAllConfigs);
         ///////////////////////////////////////////////////////////////////
@@ -218,9 +214,7 @@ public class Tools extends DAO
 //    	} else {
 //    		logger.info("Last modification: " + hours + " hours ago");
 //    	}
-    	return 	convertToFileList(
-    			loadLinesFromConfigFile(fileNameWithAllConfigs)
-    			);
+    	return loadLinesFromConfigFile(fileNameWithAllConfigs);
 //    	logger.info("Found information file: " + fileNameWithAllConfigs+ " with " + list_configName.size() + " files.");
     }
     static List<File> convertToFileList(List<String> list) {
@@ -293,6 +287,15 @@ public class Tools extends DAO
 //            logger.info("#### File " + fname + " can not be closed: " + e);
             e.printStackTrace();
         }
+    }
+    public static void writeEmptyFile(String file) {
+    	try {
+			new PrintWriter(file).close();
+		} catch (FileNotFoundException e) {
+			Logger logger = LogManager.getLogger(Tools.class);
+			logger.error(e.getMessage());
+			e.printStackTrace();
+		}
     }
     public static void writeFile(String file, List<String> content) {
     	String text = "";
