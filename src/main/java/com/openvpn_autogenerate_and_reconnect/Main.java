@@ -622,7 +622,6 @@ public class Main extends Tools
 
     private void createNewOVPNFile(String newConfig)
     {
-//        String configName = getRandomFile(list_filesInFolder); 
         try
         {
             // write new config file
@@ -633,7 +632,6 @@ public class Main extends Tools
 
             // Some config files dont need the login info, its already stored in key, so no need to replace
             if(replaceLoginString || deactivate_ciphers1 || deactivate_ciphers2) {
-            	boolean [] found = new boolean [3];
             	// reading config file
             	List<String> fileContent = new ArrayList<>(
             			Files.readAllLines(
@@ -642,64 +640,35 @@ public class Main extends Tools
 	            // Replacing line with login-data-txt-file
             	// ... Some config files dont need the login info, its already stored in key, so no need to replace ...
 	            for(int i = 0; i < fileContent.size(); i++) {
+	            	
 	                if(replaceLoginString
                 		&& fileContent.get(i).equals("auth-user-pass")) {
 				        if(consoleOut) {
 							logger.info("Found line with login info. Rewriting");
 				        }
 	                    fileContent.set(i,"auth-user-pass /etc/openvpn/user.txt");
-	                    found[0] = true;
-	                    if(!deactivate_ciphers1 && ! deactivate_ciphers2) {
-	                    	break;
-	                    } else {
-	                    	if(found[1] && found[2]) {
-	                    		break;	
-	                    	} else {
-	                    		continue;
-            				}
-	                    }
+	                    continue;
 	                }
-            	// Replacing line with login-data-txt-file
             		if(deactivate_ciphers1
         				&& fileContent.get(i).equals("data-ciphers AES-256-GCM:AES-256-CBC:AES-192-GCM:AES-192-CBC:AES-128-GCM:AES-128-CBC")) {
 		            	if(consoleOut) {
-		            		logger.info("Found line with cipher info 'data-ciphers AES-256-GCM'. Rewriting");
+		            		logger.info("Found line with cipher info 'data-ciphers AES-256-GCM ***'. Rewriting");
 		            	}
             			fileContent.set(i,"#"+fileContent.get(i));
-            			found[1] = true;
-            			if(!replaceLoginString && deactivate_ciphers2 && found[2]) {
-            				break;
-            			} else {
-	                    	if(found[0] && found[2]) {
-	                    		break;	
-	                    	} else {
-	                    		continue;
-	                    		// Do not just jump to next if filter. This position was already filtered, so program needs to go to next position -> continue
-            				}
-	                    }
+            			continue;
             		}
             		if(deactivate_ciphers2
             				&& fileContent.get(i).equals("data-ciphers-fallback AES-256-CBC")) {
             			if(consoleOut) {
-            				logger.info("Found line with cipher info 'data-ciphers-fallback'. Rewriting");
+            				logger.info("Found line with cipher info 'data-ciphers-fallback ***'. Rewriting");
             			}
             			fileContent.set(i,"#"+fileContent.get(i));
-            			found[2] = true;
-            			if(!replaceLoginString && deactivate_ciphers1 && found[1]) {
-            				break;
-            			} else {
-            				if(found[0] && found[1]) {
-            					break;	
-            				} else {
-            					continue;
-            					// Do not just jump to next if filter. This position was already filtered, so program needs to go to next position -> continue
-            				}
-	                    }
+            			continue;
             		}
 	            }
             // Write new config file
             Files.write(
-            		Paths.get(newConfig), // new filename
+            		Paths.get(openvpnConfigFile), // new filename
             		fileContent, // new file content
             		StandardCharsets.UTF_8 // options
             		);
