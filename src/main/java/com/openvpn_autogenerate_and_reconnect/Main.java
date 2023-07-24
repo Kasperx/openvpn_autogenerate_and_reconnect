@@ -357,6 +357,9 @@ public class Main extends Tools
 //        	writeConfigFileNamesToConfig(fileNameWithAllConfigs, list_filesInFolder);
 //        }
         String newConfigName = getRandomFileAndRewriteToMemoryFile(fileNameWithAllConfigs, list_configNames, list_filesInFolder);
+        /// test
+        logger.info("new config file: "+newConfigName);
+        /// test
         if(!test) {
         	createNewOVPNFile(newConfigName);
         }
@@ -547,19 +550,15 @@ public class Main extends Tools
 
         try
         {
-            // random number in between 0 (inclusive) and x.size (exclusive)
-//            File file = new File(fileNameWithAllConfigs);
-//            list_configName = getFilenameFromConfigfile();
-            
-//            do
-//            {
-//                if (list_configName != null
-//                    && list_configName.size() > 0)
-//                    random = new Random().nextInt(list_configName.size() - 1);
-//            }while(random < 0 || random >= list_configName.size());
+//        	/// test
+//        	logger.info("####################################");
+//        	logger.info("memory file "+fileNameWithAllConfigs);
+//        	logger.info("list files from memory "+list_configName);
+//        	logger.info("list files from folder "+list_filesFromFolder);
+//        	logger.info("####################################");
+//        	/// test
         	///////////////////////////////////////////////////////////////////
             if (list_configName != null && list_configName.size() > 1) {
-//                random = new Random().nextInt(list_configName.size() - 1);
 //                return (int) ((Math.random() * (max - min)) + min);
             	int random = (int) ((Math.random() * (
                 		(list_configName.size() - 1) - 0)
