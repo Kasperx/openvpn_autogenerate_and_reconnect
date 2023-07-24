@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.Logger;
 
 import tech.tablesaw.api.StringColumn;
 import tech.tablesaw.api.Table;
@@ -229,7 +230,8 @@ public class Main extends Tools
     	///////////////////////////////////////////////////////
     	/* go on */
     	this.replaceLoginString = replaceLoginString;
-    	this.deactivate_ciphers = deactivate_ciphers;
+    	this.deactivate_ciphers1 = deactivate_ciphers;
+    	this.deactivate_ciphers2 = deactivate_ciphers;
     	value[pos_replaceLoginString] = toString(replaceLoginString);
     	value[pos_test] = toString(test);
     	value[pos_deactivate_ciphers] = toString(deactivate_ciphers);
@@ -311,9 +313,9 @@ public class Main extends Tools
 //        logger.info("Start. Make sure to have at least one ovpn-file in directory '" + pathToConfigFiles + "'");
     	list_configNames = getFilenameFromConfigfile(fileNameWithAllConfigs);
     	List<String> list_filesInFolder = getConfigFilesFromFolder(pathToConfigFiles);
-    	if(consoleOut) {
-    		logger.info("Found "+list_filesInFolder.size()+" files in folder "+pathToConfigFiles);
-    	}
+//    	if(consoleOut) {
+//    		logger.info("Found "+list_filesInFolder.size()+" files in folder "+pathToConfigFiles);
+//    	}
     	/*
     	 * if info file is empty (so all files were used already) -> read config files from folder and save to file 
     	 */
@@ -462,7 +464,7 @@ public class Main extends Tools
     	if (file.exists()) {
 //    		list_configName = Tools.loadFile(fileNameWithAllConfigs);
 //    		logger.info("Found information file: " + fileNameWithAllConfigs + "'.");
-    		this.fileNameWithAllConfigs = fileNameWithAllConfigs;
+//    		this.fileNameWithAllConfigs = fileNameWithAllConfigs;
     		return 0;
     	} else {
     		try {
@@ -471,7 +473,6 @@ public class Main extends Tools
     			} else {
 //    				logger.info("File already exists: '" + fileNameWithAllConfigs + "'.");
     			}
-    			this.fileNameWithAllConfigs = fileNameWithAllConfigs;
     			this.fileNameWithAllConfigs = fileNameWithAllConfigs;
     			return 0;
     		} catch(IOException e) {
@@ -504,7 +505,7 @@ public class Main extends Tools
         // https://stackoverflow.com/questions/1844688/how-to-read-all-files-in-a-folder-from-java
         try {
         	List<File> list_filesInFolder = new ArrayList<>();
-            list_configNames = new ArrayList<String>();
+//            list_configNames = new ArrayList<String>();
             list_filesInFolder = 
             		Files
                     	.walk(Paths.get(pathToConfigFiles))
@@ -571,7 +572,7 @@ public class Main extends Tools
                 // write new file names to information file, but with one file (=name) less than before
                 String allConfigs = "";
                 for(String temp : list_configName) {
-                    allConfigs += temp.toString() /*+ "\n"*/;
+                    allConfigs += temp.toString() + "\n";
                 }
                 Tools.writeEmptyFile(fileNameWithAllConfigs);
                 Tools.writeFile(fileNameWithAllConfigs, allConfigs);
@@ -624,9 +625,6 @@ public class Main extends Tools
 //        String configName = getRandomFile(list_filesInFolder); 
         try
         {
-        	if(consoleOut) {
-        		logger.info("Replacing '"+openvpnConfigFile+"' with '"+newConfig+"'.");
-        	}
             // write new config file
             Files.copy(
             		Paths.get(newConfig),
@@ -634,69 +632,77 @@ public class Main extends Tools
             		StandardCopyOption.REPLACE_EXISTING);
 
             // Some config files dont need the login info, its already stored in key, so no need to replace
-            if(replaceLoginString) {
-                // reading config file
-                List<String> fileContent = new ArrayList<>(
-                		Files.readAllLines(
-        				Paths.get(newConfig),
-        				StandardCharsets.UTF_8));
-	            // Replacing line with login-data-txt-file
-//		        if(consoleOut) {
-//					logger.info("Replacing line with login info file");
-//		        }
-	            for(int i = 0; i < fileContent.size(); i++) {
-	                if(fileContent.get(i).equals("auth-user-pass")) {
-				        if(consoleOut) {
-							logger.info("Found line with login info. Rewriting");
-				        }
-	                    fileContent.set(i,"auth-user-pass /etc/openvpn/user.txt");
-	                    break;
-	                }
-	            }
-	                
-	            // Write new config file
-	            Files.write(
-	                    Paths.get(newConfig), // new filename
-	                    fileContent, // new file content
-	                    StandardCharsets.UTF_8 // options
-	            );
-            }
-            // Some config files dont need the login info, its already stored in key, so no need to replace
-            if(deactivate_ciphers) {
+            if(replaceLoginString || deactivate_ciphers1 || deactivate_ciphers2) {
+            	boolean [] found = new boolean [3];
             	// reading config file
             	List<String> fileContent = new ArrayList<>(
             			Files.readAllLines(
             					Paths.get(newConfig),
             					StandardCharsets.UTF_8));
+	            // Replacing line with login-data-txt-file
+            	// ... Some config files dont need the login info, its already stored in key, so no need to replace ...
+	            for(int i = 0; i < fileContent.size(); i++) {
+	                if(replaceLoginString
+                		&& fileContent.get(i).equals("auth-user-pass")) {
+				        if(consoleOut) {
+							logger.info("Found line with login info. Rewriting");
+				        }
+	                    fileContent.set(i,"auth-user-pass /etc/openvpn/user.txt");
+	                    found[0] = true;
+	                    if(!deactivate_ciphers1 && ! deactivate_ciphers2) {
+	                    	break;
+	                    } else {
+	                    	if(found[1] && found[2]) {
+	                    		break;	
+	                    	} else {
+	                    		continue;
+            				}
+	                    }
+	                }
             	// Replacing line with login-data-txt-file
-//            	if(consoleOut) {
-//            		logger.info("Deactivating line with cipher info");
-//            	}
-            	for(int i = 0; i < fileContent.size(); i++) {
-            		if(fileContent.get(i).equals("data-ciphers AES-256-GCM:AES-256-CBC:AES-192-GCM:AES-192-CBC:AES-128-GCM:AES-128-CBC")) {
+            		if(deactivate_ciphers1
+        				&& fileContent.get(i).equals("data-ciphers AES-256-GCM:AES-256-CBC:AES-192-GCM:AES-192-CBC:AES-128-GCM:AES-128-CBC")) {
 		            	if(consoleOut) {
-		            		logger.info("Found line line with cipher info 'data-ciphers AES-256-GCM'. Rewriting");
+		            		logger.info("Found line with cipher info 'data-ciphers AES-256-GCM'. Rewriting");
 		            	}
             			fileContent.set(i,"#"+fileContent.get(i));
-            			break;
+            			found[1] = true;
+            			if(!replaceLoginString && deactivate_ciphers2 && found[2]) {
+            				break;
+            			} else {
+	                    	if(found[0] && found[2]) {
+	                    		break;	
+	                    	} else {
+	                    		continue;
+	                    		// Do not just jump to next if filter. This position was already filtered, so program needs to go to next position -> continue
+            				}
+	                    }
             		}
-            	}
-            	for(int i = 0; i < fileContent.size(); i++) {
-            		if(fileContent.get(i).equals("data-ciphers-fallback AES-256-CBC")) {
+            		if(deactivate_ciphers2
+            				&& fileContent.get(i).equals("data-ciphers-fallback AES-256-CBC")) {
             			if(consoleOut) {
-            				logger.info("Found line line with cipher info 'data-ciphers-fallback'. Rewriting");
+            				logger.info("Found line with cipher info 'data-ciphers-fallback'. Rewriting");
             			}
             			fileContent.set(i,"#"+fileContent.get(i));
-            			break;
+            			found[2] = true;
+            			if(!replaceLoginString && deactivate_ciphers1 && found[1]) {
+            				break;
+            			} else {
+            				if(found[0] && found[1]) {
+            					break;	
+            				} else {
+            					continue;
+            					// Do not just jump to next if filter. This position was already filtered, so program needs to go to next position -> continue
+            				}
+	                    }
             		}
-            	}
-            	
-            	// Write new config file
-            	Files.write(
-            			Paths.get(newConfig), // new filename
-            			fileContent, // new file content
-            			StandardCharsets.UTF_8 // options
-            			);
+	            }
+            // Write new config file
+            Files.write(
+            		Paths.get(newConfig), // new filename
+            		fileContent, // new file content
+            		StandardCharsets.UTF_8 // options
+            		);
             }
         } catch(Exception e) {
         	if(consoleOut) {
@@ -807,7 +813,7 @@ public class Main extends Tools
     	logger.info("\t[-replace]  	replace login string like 'auth <loginname>' in configfile. Default = '"
     			+ this.replaceLoginString + "'");
     	logger.info("\t[-deactivate-ciphers]  	deactivate line with cipher info like 'data-ciphers AES-256-GCM' in configfile. Default = '"
-    			+ this.deactivate_ciphers + "'");
+    			+ this.deactivate_ciphers1 + "'");
     	logger.info("Exit");
 		System.exit(0);
     }
@@ -827,7 +833,7 @@ public class Main extends Tools
         ///////////////////////////////////////////////////////////////////
         // find parameter -v
     	for(int i = 0; i < args.length; i++) {
-    		if(args[i] == "-v") {
+    		if(args[i].equalsIgnoreCase("-v")) {
     			main.consoleOut = true;
     		}
     	}

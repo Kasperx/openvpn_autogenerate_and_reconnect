@@ -15,7 +15,8 @@ public class DAO {
 
     public String pathToConfigFiles = "/etc/openvpn/configs";
     public boolean replaceLoginString = false;
-    public boolean deactivate_ciphers = false;
+    public boolean deactivate_ciphers1 = false;
+    public boolean deactivate_ciphers2 = false;
     
 //    static final Logger logger = Logger.getLogger(RegenerateOVPNConfigFile.class.getName());
     public Logger logger;
