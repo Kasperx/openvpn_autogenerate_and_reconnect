@@ -257,7 +257,8 @@ public class Main extends Tools
 							StringColumn.create("Value", value),
 							StringColumn.create("Discription", info)
 					);
-	    	table.appendRow();
+//	    	table.appendRow();
+	    	logger.info("");
 			logger.info(table.print());
     	}
 //		for(boolean status: status_success) {
