@@ -10,14 +10,16 @@ public class DAO {
 
 	public String fileNameWithAllConfigs = "/etc/openvpn/fileWithAllConfigs.txt";
     public String openvpnConfigFile = "/etc/openvpn/openvpn.conf";
-    public List<String> list_configName;
-    public List<File> list_filesInFolder;
+    public List<String> list_configNames;
+//    public List<String> list_filesInFolder;
 
     public String pathToConfigFiles = "/etc/openvpn/configs";
     public boolean replaceLoginString = false;
+    public boolean deactivate_ciphers1 = false;
+    public boolean deactivate_ciphers2 = false;
     
 //    static final Logger logger = Logger.getLogger(RegenerateOVPNConfigFile.class.getName());
     public Logger logger;
     boolean test = false;
-    boolean consoleOut = true;
+    boolean consoleOut = false;
 }

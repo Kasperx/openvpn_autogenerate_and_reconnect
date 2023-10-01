@@ -13,9 +13,9 @@ if [ -z "$1" ] || [ "$1" = "-?" ]; then
 #	echo -e "check-normal	\t= check normal connection to be alive, then exit"
 #	echo -e "check-vpn	\t= check open-vpn connection to be alive, then exit"
 #	echo -e "check-or-reconnect	\t= check open-vpn connection to be alive, reconnect in case of problems *1"
-	echo -e "recreate \t-\t= recreate $name_of_connection config"
-	echo -e "reconnect \t-\t= reconnect $name_of_connection connection *1, ignore current status"
-	echo -e "recreate reconnect \t= recreate $name_of_connection config, then reconnect $name_of_connection connection *1"
+	echo -e "recreate (1) \t-\t= recreate $name_of_connection config"
+	echo -e "reconnect (2) \t-\t= reconnect $name_of_connection connection *1, ignore current status"
+	echo -e "recreate reconnect (1 2) \t= recreate $name_of_connection config, then reconnect $name_of_connection connection *1"
 	echo -e "test \t\t-\t= shows console output"
 	echo -e "*1 \t\t-\t= Requirement: active internet connection!"
 	echo "Bye"
@@ -40,7 +40,7 @@ logfile=/home/pi/openvpn.log
 #logfile=openvpn.log
 #alias ping='ping -W 2 -I tun0 -c 1'
 #alias ping='fping -t500 -I tun0 -c 1'
-alias ping='timeout 2.0 ping -t500 -I tun0 -c 1'
+#alias ping='timeout 2.0 ping -t500 -I tun0 -c 1'
 var=$1
 var2=$2
 var3=$3
@@ -55,9 +55,13 @@ function recreate {
 	echo "Recreate config: $(date +%d.%m.%Y-%H.%M)" | tee -a $logfile
 	export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-armhf/jre/bin/java
 	if [ "$1" = "-v" ]; then
-		sudo java -jar /scripte/RegenerateOVPNConfigFile.jar -path /etc/openvpn/configs 2>&1 | tee -a $logfile
+#		sudo java -jar /scripte/RegenerateOVPNConfigFile.jar -path /etc/openvpn/configs 2>&1 | tee -a $logfile
+#		sudo java -Dlog4j.configurationFile=bin/java/log4j.xml -jar bin/java/openvpn_autogenerate_and_reconnect-0.0.1-SNAPSHOT-jar-with-dependencies.jar -replace -v 2>&1 | tee -a $logfile
+		sudo java -Dlog4j.configurationFile=bin/java/log4j.xml -jar bin/java/openvpn_autogenerate_and_reconnect-0.0.1-SNAPSHOT-jar-with-dependencies.jar -v -deactivate-ciphers 2>&1 | tee -a $logfile
 	else
-		sudo java -jar /scripte/RegenerateOVPNConfigFile.jar -path /etc/openvpn/configs >> $logfile 2>&1
+#		sudo java -jar /scripte/RegenerateOVPNConfigFile.jar -path /etc/openvpn/configs >> $logfile 2>&1
+#                sudo java -Dlog4j.configurationFile=bin/java/log4j.xml -jar bin/java/openvpn_autogenerate_and_reconnect-0.0.1-SNAPSHOT-jar-with-dependencies.jar -replace -v >> $logfile 2>&1
+                sudo java -Dlog4j.configurationFile=bin/java/log4j.xml -jar bin/java/openvpn_autogenerate_and_reconnect-0.0.1-SNAPSHOT-jar-with-dependencies.jar -v -deactivate-ciphers >> $logfile 2>&1
 	fi
 
 }
@@ -86,10 +90,16 @@ function reconnect {
 	sleep 10
 #	#test
         echo "test to logfile $logfile"
-	echo "File has ". grep -Rl "curl" ./ -c ."count of lines"
+#	echo "File has ". grep -Rl "curl" ./ -c ."count of lines"
 	echo "vpn restart  ... $(date '+%d.%m.%Y-%H.%M.%S')" | tee -a $logfile
 	echo "reconnect..." | tee -a $logfile
 	sudo systemctl start openvpn
+	check_openvpn
+        status=$?
+        if [ $status -gt 0 ]; then
+                echo "Something wrong with tun interface"
+		sudo openvpn --config /etc/openvpn/openvpn.conf &
+        fi
 ##	sudo openvpn --config /etc/openvpn/openvpn.conf >> /dev/null 2>&1 &
 #	# time for reconnect
 	sleep 20
@@ -121,7 +131,13 @@ function reconnect {
 	sleep 10
 	echo "vpn restart  ... $(date '+%d.%m.%Y-%H.%M.%S')" >> $logfile 2>&1
 	echo "reconnect..." >> $logfile 2>&1
-	sudo systemctl start openvpn
+	sudo systemctl start openvpn >> /dev/null 2>&1
+	check_openvpn
+        status=$?
+        if [ $status -gt 0 ]; then
+                echo "Something wrong with tun interface"
+		sudo openvpn --config /etc/openvpn/openvpn.conf & >> /dev/null 2>&1
+        fi
 	#echo "vpn restart  ... $(date '+%d.%m.%Y-%H.%M.%S')" >> $logfile 2>&1
 #	sudo openvpn --config /etc/openvpn/openvpn.conf >> /dev/null 2>&1 &
 	# time for reconnect
@@ -131,7 +147,7 @@ function reconnect {
 	/home/pi/bin/ask_public_ip.sh >> $logfile 2>&1
 	echo "" >> $logfile 2>&1
 	echo "End" >> $logfile 2>&1
-	/home/pi/bin/dyndns_goip_update_ip.sh
+	/home/pi/bin/dyndns_goip_update_ip.sh >> /dev/null 2>&1
 
 	fi
 
@@ -145,7 +161,8 @@ function reconnect {
 function check_normal {
 
 #	if [ -n "`timeout 2.0 ping -I eth0 -c 1 web.de`" ] && [ -n "`timeout 2.0 ping -I eth0 -c 1 gmx.de`" ];then
-	if [ -n "`timeout 2.0 ping -I eth0 -c 1 ${web_address_1}`" ] && [ -n "`timeout 2.0 ping -I eth0 -c 1 ${web_address_2}`" ];then
+#	if [ -n "`timeout 2.0 ping -I eth0 -c 1 ${web_address_1}`" ] && [ -n "`timeout 2.0 ping -I eth0 -c 1 ${web_address_2}`" ];then
+	if [ -n "`ping -I eth0 -c 1 -w 1 ${web_address_1} >> /dev/null 2>&1`" ] && [ -n "`ping -I eth0 -c 1 -w 1 ${web_address_2} >> /dev/null 2>&1`" ];then
 
 #		echo "Internet connected"
 		return 0
@@ -163,7 +180,9 @@ function check_openvpn {
 
 	# Interface tun0 available (= not null) ?
 #	if [ -z "$iface" ] && [ -z "`timeout 2.0 ping -I tun0 -c 1 ${web_address_1}`" ] && [ -z "`timeout 2.0 ping -I tun0 -c 1 ${web_address_2}`" ]; then
-	if [ -z "`timeout 2.0 ping -I tun0 -c 1 ${web_address_1}`" ] && [ -z "`timeout 2.0 ping -I tun0 -c 1 ${web_address_2}`" ]; then
+#	if [ -z "`timeout 2.0 ping -I tun0 -c 1 ${web_address_1}`" ] && [ -z "`timeout 2.0 ping -I tun0 -c 1 ${web_address_2}`" ]; then
+#	if [ -z "`timeout 2.0 ping -I tun0 -c 1 ${web_address_1} >> /dev/null 2>&1`" ] && [ -z "`timeout 2.0 ping -I tun0 -c 1 ${web_address_2} >> /dev/null 2>&1`" ]; then
+	if [ -z "`ping -I tun0 -c 1 -w 1 ${web_address_1} >> /dev/null 2>&1`" ] && [ -z "`ping -I tun0 -c 1 -w 1 ${web_address_2} >> /dev/null 2>&1`" ]; then
 
 		if [ -z "$iface" ]; then
 
@@ -413,7 +432,7 @@ if [ "$var" = "check" ] || [ "$var" = "auto" ];then
 	fi
 
 #elif [ "$var" = "reconnect" ] || [ "$var" = "recreate" ];then
-elif [ "$var" = "reconnect" ];then
+elif [ "$var" = "reconnect" ] || [ "$var" = "2" ];then
 
 	if [ "$var2" = "test" ];then
 		echo "####################################################" | tee -a $logfile
@@ -423,9 +442,9 @@ elif [ "$var" = "reconnect" ];then
 		reconnect
 	fi
 
-elif [ "$var" = "recreate" ];then
+elif [ "$var" = "recreate" ] || [ "$var" = "1" ];then
 
-	if [ "$var2" = "reconnect" ];then
+	if [ "$var2" = "reconnect" ] || [ "$var" = "2" ];then
 
 		if [ "$var3" = "test" ];then
 			echo "####################################################" | tee -a $logfile
