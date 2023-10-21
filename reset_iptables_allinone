@@ -1,0 +1,193 @@
+#!/bin/bash
+IPT="/sbin/iptables"
+
+# Server IP
+#SERVER_IP="$(ip addr show eth0 | grep 'inet ' | cut -f2 | awk '{ print $2}')"
+#echo $SERVER_IP
+
+# Your DNS servers you use: cat /etc/resolv.conf
+DNS_SERVER="194.150.168.168 84.200.69.80 84.200.70.40"
+iface1="eth0"
+tun="tun0"
+iface2="eth1"
+server="192.168.178.9"
+server2="192.168.178.3"
+router="1.1.1.1"
+
+echo "flush iptable rules"
+$IPT -F
+$IPT -X
+$IPT -t nat -F
+$IPT -t nat -X
+$IPT --delete-chain
+$IPT -t mangle -F
+$IPT -t mangle -X
+all="$iface1 $iface2 tun"
+all_without_tun="$iface1 $iface2"
+
+for iface in $all_without_tun; do
+echo "allow all and everything on $iface"
+	$IPT -A INPUT   -i $iface -p all -j ACCEPT
+	$IPT -A FORWARD -i $iface -p all -j ACCEPT
+	$IPT -A FORWARD -o $iface -p all -j ACCEPT
+#	$IPT -A OUTPUT  -o $iface -p all -j DROP
+done
+
+echo "allow all and everything outgoing on $tun"
+$IPT -A INPUT 	-i $tun -p all -j ACCEPT
+$IPT -A FORWARD -i $tun -p all -j ACCEPT
+$IPT -A FORWARD -o $tun -p all -j ACCEPT
+$IPT -A OUTPUT 	-o $tun -p all -j ACCEPT
+
+#echo "do not allow all and everything on $iface1"
+#$IPT -A INPUT   -i $iface1 -p all -j ACCEPT
+#$IPT -A FORWARD -i $iface1 -p all -j ACCEPT
+#$IPT -A FORWARD -o $iface1 -p all -j ACCEPT
+#$IPT -A OUTPUT  -o $iface1 -p all -j DROP
+echo "allow all and everything on localhost"
+$IPT -A INPUT 	-i lo -j ACCEPT
+$IPT -A OUTPUT 	-o lo -j ACCEPT
+#echo "allow all and everything outgoing on $tun"
+#$IPT -A INPUT 	-i $tun -p all -j ACCEPT
+#$IPT -A FORWARD -i $tun -p all -j ACCEPT
+#$IPT -A FORWARD -o $tun -p all -j ACCEPT
+#$IPT -A OUTPUT 	-o $tun -p all -j ACCEPT
+#echo "do not allow all and everything on $iface2"
+#$IPT -A INPUT 	-i $iface2 -p all -j ACCEPT
+#$IPT -A FORWARD -i $iface2 -p all -j ACCEPT
+#$IPT -A FORWARD	-o $iface2 -p all -j ACCEPT
+#$IPT -A OUTPUT 	-o $iface2 -p all -j DROP
+
+echo "forward everything from x to $tun"
+$IPT -t nat -A POSTROUTING -o tun0 -j MASQUERADE
+
+# test
+#echo "Allow traffic to $iface2, $server & $server2"
+#$IPT -A INPUT -p tcp -i $iface1 -j ACCEPT
+#$IPT -A INPUT -p udp -i $iface1 -j ACCEPT
+#$IPT -A OUTPUT -p tcp -o $iface2 -d ${server} -j ACCEPT
+#$IPT -A OUTPUT -p udp -o $iface2 -d ${server} -j ACCEPT
+#$IPT -A OUTPUT -p tcp -o $iface2 -d ${server2} -j ACCEPT
+#$IPT -A OUTPUT -p udp -o $iface2 -d ${server2} -j ACCEPT
+# /test
+
+echo "Allow forwarding traffic from $iface1 to $tun"
+$IPT -A FORWARD -i eth0 -o tun0 -m state --state RELATED,ESTABLISHED -j ACCEPT
+$IPT -A FORWARD -i eth0 -o tun0 -m state --state NEW -j ACCEPT
+$IPT -A FORWARD -i eth0 -o tun0 -j ACCEPT
+
+echo "Allow forwarding traffic from $iface2 to $tun"
+$IPT -A FORWARD -i eth1 -o tun0 -m state --state RELATED,ESTABLISHED -j ACCEPT
+$IPT -A FORWARD -i eth1 -o tun0 -m state --state NEW -j ACCEPT
+$IPT -A FORWARD -i eth1 -o tun0 -j ACCEPT
+
+#$IPT -A FORWARD -i eth1 -o eth0 -m state --state RELATED,ESTABLISHED -j DROP
+#$IPT -A FORWARD -i eth1 -o eth0 -m state --state NEW -j DROP
+#$IPT -A FORWARD -i eth1 -o eth0 -j DROP
+
+#$IPT -A FORWARD -i eth0 -o eth1 -m state --state RELATED,ESTABLISHED -j DROP
+#$IPT -A FORWARD -i eth0 -o eth1 -m state --state NEW -j DROP
+#$IPT -A FORWARD -i eth0 -o eth1 -j DROP
+
+# test
+#$IPT -A FORWARD -i eth1 -o eth0 -d ${server} -j ACCEPT
+#$IPT -A FORWARD -i eth1 -o eth0 -d ${server2} -j ACCEPT
+# /test
+echo "Allow forwarding traffic from $iface2 to $iface1"
+$IPT -A FORWARD -i eth1 -o eth0 -m state --state RELATED,ESTABLISHED -j ACCEPT
+$IPT -A FORWARD -i eth1 -o eth0 -m state --state NEW -j ACCEPT
+$IPT -A FORWARD -i eth1 -o eth0 -j ACCEPT
+
+echo "Allow forwarding traffic from $iface1 to $iface2"
+$IPT -A FORWARD -i eth0 -o eth1 -m state --state RELATED,ESTABLISHED -j ACCEPT
+$IPT -A FORWARD -i eth0 -o eth1 -m state --state NEW -j ACCEPT
+$IPT -A FORWARD -i eth0 -o eth1 -j ACCEPT
+
+# port forwarding
+# forward from x to 1.1.1.1:22 (Router)
+$IPT -A PREROUTING -t nat -i $tun -d ${router} -p udp --dport 22 -j DNAT --to ${router}:22
+$IPT -A PREROUTING -t nat -i $tun -d ${router} -p tcp --dport 22 -j DNAT --to ${router}:22
+# forward from x to 1.1.1.2:30 (Server)
+$IPT -A PREROUTING -t nat -i $tun -m tcp -p tcp --dport 30 -j DNAT --to-destination ${server}:30
+$IPT -A PREROUTING -t nat -i $tun -m udp -p udp --dport 30 -j DNAT --to-destination ${server}:30
+$IPT -I FORWARD -p tcp -d ${server} --dport 30 -j ACCEPT
+$IPT -I FORWARD -p udp -d ${server} --dport 30 -j ACCEPT
+# forward from x to 1.1.1.2:443 (Server)
+$IPT -A PREROUTING -t nat -i $tun -m tcp -p tcp --dport 443 -j DNAT --to-destination ${server}:443
+$IPT -A PREROUTING -t nat -i $tun -m udp -p udp --dport 443 -j DNAT --to-destination ${server}:443
+# forward from x to 1.1.1.2:55555 (Server)
+$IPT -A PREROUTING -t nat -i $tun -m tcp -p tcp --dport 42220 -j DNAT --to-destination ${server}:42220
+$IPT -A PREROUTING -t nat -i $tun -m udp -p udp --dport 42220 -j DNAT --to-destination ${server}:42220
+$IPT -I INPUT -i $tun -p udp --dport 42220 -j ACCEPT
+$IPT -I INPUT -i $tun -p tcp --dport 42220 -j ACCEPT
+
+## This should be one of the first rules.
+## so dns lookups are already allowed for your other rules
+for ip in $DNS_SERVER
+do
+	for interface in $all_without_tun
+	do
+		echo "Allowing DNS lookups (tcp, udp port 53) to server '$ip' ($interface)"
+#		$IPT -I OUTPUT -p udp -d $ip --dport 53 -o $interface -m state --state NEW,ESTABLISHED -j ACCEPT
+		$IPT -I INPUT  -p udp -s $ip --sport 53 -i $interface -m state --state ESTABLISHED     -j ACCEPT
+#		$IPT -I OUTPUT -p tcp -d $ip --dport 53 -o $interface -m state --state NEW,ESTABLISHED -j ACCEPT
+		$IPT -I INPUT  -p tcp -s $ip --sport 53 -i $interface -m state --state ESTABLISHED     -j ACCEPT
+	done
+done
+
+#######################################################################################################
+## Global iptable rules. Not IP specific
+
+for interface in $all_without_tun
+do
+	echo "Allowing new and established incoming connections to port 22, 30, 443, 123, 1194, 42220, 53, 67 for $interface"
+	# tcp, normal
+	$IPT -I INPUT  -p tcp -i $interface -m multiport --dports 53,22,30,443,123,1194,42220,67,5000 -m state --state NEW,ESTABLISHED -j ACCEPT
+	$IPT -I OUTPUT -p tcp -o $interface -m multiport --sports 53,22,30,443,123,1194,42220,67,5000 -m state --state NEW,ESTABLISHED -j ACCEPT
+	# reverse
+	$IPT -I INPUT  -p tcp -i $interface -m multiport --sports 53,22,30,443,123,1194,42220,67,5000 -m state --state NEW,ESTABLISHED -j ACCEPT
+	$IPT -I OUTPUT -p tcp -o $interface -m multiport --dports 53,22,30,443,123,1194,42220,67,5000 -m state --state NEW,ESTABLISHED -j ACCEPT
+	# udp, normal
+	$IPT -I INPUT  -p udp -i $interface -m multiport --dports 53,22,30,443,123,1194,42220,67,5000 -m state --state NEW,ESTABLISHED -j ACCEPT
+	$IPT -I OUTPUT -p udp -o $interface -m multiport --sports 53,22,30,443,123,1194,42220,67,5000 -m state --state NEW,ESTABLISHED -j ACCEPT
+	# reverse
+	$IPT -I INPUT  -p udp -i $interface -m multiport --sports 53,22,30,443,123,1194,42220,67,5000 -m state --state NEW,ESTABLISHED -j ACCEPT
+	$IPT -I OUTPUT -p udp -o $interface -m multiport --dports 53,22,30,443,123,1194,42220,67,5000 -m state --state NEW,ESTABLISHED -j ACCEPT
+done
+
+#$IPT -I OUTPUT -p icmp -m state -o $iface --state NEW,ESTABLISHED -j ACCEPT
+for iface in $all; do
+	echo "Allow outgoing icmp connections (pings,...) on $iface"
+	$IPT -I INPUT  -p icmp -m state -i $iface --state NEW,ESTABLISHED -j ACCEPT
+	$IPT -A OUTPUT -p icmp -m state -o $iface --state NEW,ESTABLISHED -j ACCEPT
+	$IPT -A INPUT -p icmp --icmp-type echo-request -j ACCEPT
+#	$IPT -A OUTPUT -p icmp --icmp-type echo-reply -j DROP
+done
+
+#echo "Allow outgoing icmp connections (pings,...) on $iface1 & $iface2"
+#$IPT -I INPUT  -p icmp -m state -i $iface1 --state NEW,ESTABLISHED -j ACCEPT
+#$IPT -I INPUT  -p icmp -m state -i $iface2 --state NEW,ESTABLISHED -j ACCEPT
+#$IPT -A OUTPUT  -p icmp -m state -o $iface1 --state NEW,ESTABLISHED -j ACCEPT
+#$IPT -A OUTPUT  -p icmp -m state -o $iface2 --state NEW,ESTABLISHED -j ACCEPT
+
+for iface in $all_without_tun; do
+echo "do not allow all on $iface for output"
+#	$IPT -A INPUT   -i $iface -p all -j ACCEPT
+#	$IPT -A FORWARD -i $iface -p all -j ACCEPT
+#	$IPT -A FORWARD -o $iface -p all -j ACCEPT
+	$IPT -A OUTPUT  -o $iface -p all -j DROP
+done
+
+# Log before dropping
+$IPT -A INPUT  -j LOG  -m limit --limit 12/min --log-level 4 --log-prefix 'IP INPUT drop: '
+$IPT -A INPUT  -j DROP
+
+$IPT -A OUTPUT -j LOG  -m limit --limit 12/min --log-level 4 --log-prefix 'IP OUTPUT drop: '
+$IPT -A OUTPUT -j DROP
+
+# Save to apply at reboot:
+$IPT-save > /etc/iptables/rules.v4
+service netfilter-persistent save
+
+
+exit 0
