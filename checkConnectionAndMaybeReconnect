@@ -22,9 +22,9 @@ if [ -z "$1" ] || [ "$1" = "-?" ]; then
 	exit
 fi
 
-if [ -z "`whereis fping`" ];then
-	sudo apt install -y fping
-fi
+#if [ -z "`whereis fping`" ];then
+#	sudo apt install -y fping
+#fi
 
 iface=`ifconfig | grep tun`
 #iface=`ip tuntap show`
@@ -162,9 +162,35 @@ function check_normal {
 
 #	if [ -n "`timeout 2.0 ping -I eth0 -c 1 web.de`" ] && [ -n "`timeout 2.0 ping -I eth0 -c 1 gmx.de`" ];then
 #	if [ -n "`timeout 2.0 ping -I eth0 -c 1 ${web_address_1}`" ] && [ -n "`timeout 2.0 ping -I eth0 -c 1 ${web_address_2}`" ];then
-	if [ -n "`ping -I eth0 -c 1 -w 1 ${web_address_1} >> /dev/null 2>&1`" ] && [ -n "`ping -I eth0 -c 1 -w 1 ${web_address_2} >> /dev/null 2>&1`" ];then
+#	if [ -n "`ping -I eth0 -c 1 -w 1 ${web_address_1} >> /dev/null 2>&1`" ] && [ -n "`ping -I eth0 -c 1 -w 1 ${web_address_2} >> /dev/null 2>&1`" ];then
+	if ping -I eth0 -c 1 -w 1 ${web_address_1} >> /dev/null 2>&1 && ping -I eth0 -c 1 -w 1 ${web_address_2} >> /dev/null 2>&1 ;then
 
 #		echo "Internet connected"
+		return 0
+
+	else
+
+#		echo "No internet connection"
+		return 1
+
+	fi
+}
+### check normal tcp connection
+function check_normal_test {
+
+#	if [ -n "`timeout 2.0 ping -I eth0 -c 1 web.de`" ] && [ -n "`timeout 2.0 ping -I eth0 -c 1 gmx.de`" ];then
+#	if [ -n "`timeout 2.0 ping -I eth0 -c 1 ${web_address_1}`" ] && [ -n "`timeout 2.0 ping -I eth0 -c 1 ${web_address_2}`" ];then
+#	if [ -n "`ping -I eth0 -c 1 -w 1 ${web_address_1} >> /dev/null 2>&1`" ];then
+#	if [ ping -I eth0 -c 1 -w 1 ${web_address_1} >> /dev/null 2>&1 ];then
+	if ping -I eth0 -c 1 -w 1 ${web_address_1} >> /dev/null 2>&1 ;then
+
+#		echo "Internet connected to ${web_address_1}"
+		return 0
+
+#	elif [ -n "`ping -I eth0 -c 1 -w 1 ${web_address_2} >> /dev/null 2>&1`" ];then
+	elif ping -I eth0 -c 1 -w 1 ${web_address_2} >> /dev/null 2>&1 ;then
+
+#		echo "Internet connected to ${web_address_2}"
 		return 0
 
 	else
