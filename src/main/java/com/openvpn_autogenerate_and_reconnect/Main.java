@@ -232,6 +232,7 @@ public class Main extends Tools
     	this.replaceLoginString = replaceLoginString;
     	this.deactivate_ciphers1 = deactivate_ciphers;
     	this.deactivate_ciphers2 = deactivate_ciphers;
+    	this.deactivate_ciphers3 = deactivate_ciphers;
     	value[pos_replaceLoginString] = toString(replaceLoginString);
     	value[pos_test] = toString(test);
     	value[pos_deactivate_ciphers] = toString(deactivate_ciphers);
@@ -257,11 +258,9 @@ public class Main extends Tools
 							StringColumn.create("Value", value),
 							StringColumn.create("Discription", info)
 					);
-//	    	table.appendRow();
 	    	logger.info("");
 			logger.info(table.print());
     	}
-//		for(boolean status: status_success) {
 		for(int i=0; i<status_success.length; i++) {
     		if(!status_success[i]) {
     			exitWithError(info[i]);
@@ -619,11 +618,39 @@ public class Main extends Tools
         }
         return newConfigName;
     }
-
+    void checkFileContent(String newConfig) {
+    	try {
+			List<String> fileContent = new ArrayList<>(
+					Files.readAllLines(
+							Paths.get(newConfig),
+							StandardCharsets.UTF_8));
+			if(consoleOut) {
+				logger.info("##############################");
+				logger.info("##############################");
+				logger.info("##############################");
+			}
+			// Replacing line with login-data-txt-file
+			// ... Some config files dont need the login info, its already stored in key, so no need to replace ...
+			for(int i = 0; i < fileContent.size(); i++) {
+				if(consoleOut) {
+					logger.info(fileContent.get(i));
+				}
+			}
+			if(consoleOut) {
+				logger.info("##############################");
+				logger.info("##############################");
+				logger.info("##############################");
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+}
+    
     private void createNewOVPNFile(String newConfig)
     {
         try
         {
+//        	checkFileContent(newConfig);
             // write new config file
             Files.copy(
             		Paths.get(newConfig),
@@ -665,8 +692,17 @@ public class Main extends Tools
             			fileContent.set(i,"#"+fileContent.get(i));
             			continue;
             		}
+            		if(deactivate_ciphers3
+            				&& fileContent.get(i).startsWith("data-ciphers")) {
+            			if(consoleOut) {
+            				logger.info("Found line with cipher info 'data-ciphers ***'. Rewriting");
+            			}
+            			fileContent.set(i,"#"+fileContent.get(i));
+            			continue;
+            		}
 	            }
             // Write new config file
+            logger.info("Writing new config file '" + openvpnConfigFile + "'.");
             Files.write(
             		Paths.get(openvpnConfigFile), // new filename
             		fileContent, // new file content
@@ -675,8 +711,12 @@ public class Main extends Tools
             }
         } catch(Exception e) {
         	if(consoleOut) {
-				logger.error("createNewOVPNFile:");
+        		logger.error("Error:");
+				logger.error("createNewOVPNFile");
 				logger.error("newconfig: '"+newConfig+"', file exists? "+new File(newConfig).exists());
+				if(!new File(newConfig).exists()) {
+					logger.error("If there are new config files in folder -> pls remember to remove or clear file config-file '" + fileNameWithAllConfigs + "'.");
+				}
         		logger.error("openvpnConfigFile: '" +openvpnConfigFile+ "', file exists? "+ new File(openvpnConfigFile).exists());
         		logger.error(e.getMessage());
         	}

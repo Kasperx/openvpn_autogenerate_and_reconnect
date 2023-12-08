@@ -9,7 +9,7 @@ import org.apache.logging.log4j.Logger;
 public class DAO {
 
 	public String fileNameWithAllConfigs = "/etc/openvpn/fileWithAllConfigs.txt";
-    public String openvpnConfigFile = "/etc/openvpn/openvpn.conf";
+    public String openvpnConfigFile = "/etc/openvpn/openvpn.ovpn";
     public List<String> list_configNames;
 //    public List<String> list_filesInFolder;
 
@@ -17,6 +17,7 @@ public class DAO {
     public boolean replaceLoginString = false;
     public boolean deactivate_ciphers1 = false;
     public boolean deactivate_ciphers2 = false;
+    public boolean deactivate_ciphers3 = false;
     
 //    static final Logger logger = Logger.getLogger(RegenerateOVPNConfigFile.class.getName());
     public Logger logger;
