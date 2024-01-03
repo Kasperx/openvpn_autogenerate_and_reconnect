@@ -1,5 +1,5 @@
 
-package main.java.com.openvpn_autogenerate_and_reconnect;
+package main.java.org.example;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
