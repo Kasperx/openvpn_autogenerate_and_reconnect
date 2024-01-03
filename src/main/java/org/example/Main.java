@@ -1,5 +1,5 @@
 
-package main.java.com.openvpn_autogenerate_and_reconnect;
+package main.java.org.example;
 
 import java.io.File;
 import java.io.IOException;
@@ -10,28 +10,23 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.core.Logger;
 
 import tech.tablesaw.api.StringColumn;
 import tech.tablesaw.api.Table;
 
 public class Main extends Tools
 {
-//    private static String fileNameWithAllConfigs = "/etc/openvpn/fileWithAllConfigs.txt";
-//    private static String newConfig = "/etc/openvpn/openvpn.conf";
-//    private static List<String> list_configName;
-//    private static List<File> list_filesInFolder;
-//
-//    private static String pathToConfigs;
-//    private static boolean replaceLoginString = false;
-//    
-////    static final Logger logger = Logger.getLogger(RegenerateOVPNConfigFile.class.getName());
+	static {
+		if(new File(System.getProperty("user.dir")+"/config/log4j.xml").exists()) {
+			System.setProperty("log4j.configurationFile", System.getProperty("user.dir")+"/config/log4j.xml");
+		}
+	}
 	Main main;
 	
     public Main(){}
@@ -74,7 +69,7 @@ public class Main extends Tools
 		logger.info("###");
     }
     private String toString(boolean value) {
-    	return value ? "true" : "false";
+    	return value ? "Yes" : "No";
     }
     private void run(String pathToConfigFiles, boolean replaceLoginString, String pathToConfigFile) {
 
@@ -82,12 +77,18 @@ public class Main extends Tools
     	if(consoleOut) {
     		showInfo(pathToConfigFiles, replaceLoginString, pathToConfigFile);
     	}
-    	boolean [] status_success = new boolean [2];
+    	//boolean [] status_success = new boolean [2];
     	/**************************/
     	/* check input params */
     	/**************************/
     	/* check directory with config files*/
-	    if(checkDirectoryWithConfigFiles(pathToConfigFiles) <= 0) {
+		//DAO.ConfigfileStatus configfileStatus = checkDirectoryWithConfigFiles(pathToConfigFiles);
+//	    if(checkDirectoryWithConfigFiles(pathToConfigFiles) <= 0) {
+		List<DAO.ConfigfileStatus> listFileStatus = new ArrayList<ConfigfileStatus>(Collections.nCopies(10, null));
+		listFileStatus.set(0, checkDirectoryWithConfigFiles(pathToConfigFile));
+		listFileStatus.set(1, checkDirectoryWithConfigFiles(pathToConfigFiles));
+		/*
+	    if(checkDirectoryWithConfigFiles(pathToConfigFiles) == ConfigfileStatus.EXISTING) {
 	    	this.pathToConfigFiles = pathToConfigFiles;
 	    	status_success[0] = true;
 	    } else {
@@ -95,34 +96,39 @@ public class Main extends Tools
 //	    	exitWithError();
 	    }
 	    /**************************/
-	    /* check config files*/
-	    if(checkConfigFile(pathToConfigFile) <= 0) {
+	    /* check config files*
+	    if(checkDirectoryWithConfigFiles(pathToConfigFile) == ConfigfileStatus.EXISTING) {
 	    	status_success[1] = true;
 	    } else {
 	    	status_success[1] = false;
 	    }
-	    /**************************/
+	    /**************************
+		*/
 	    /* go on */
-	    for(boolean status: status_success) {
+	    /*for(boolean status: status_success) {
 	    	if(!status) {
 	    		exitWithError(null);
 	    	}
-	    }
-		this.replaceLoginString = replaceLoginString;
-		if(this.replaceLoginString) {
-			if(consoleOut) {
-				logger.info("(Replacing login string in config)");
+	    }*/
+		for(DAO.ConfigfileStatus configfileStatus: listFileStatus) {
+			if(! configfileStatus.valid()) {
+				int index = listFileStatus.indexOf(configfileStatus);
+				exitWithError(null);
 			}
-		} else {
-			if(consoleOut) {
+		}
+		this.replaceLoginString = replaceLoginString;
+		if (consoleOut) {
+			if(this.replaceLoginString) {
+				logger.info("(Replacing login string in config)");
+			} else {
 				logger.info("(NOT replacing login string in config)");
 			}
 		}
 		run();
-    }
+	}
     private void runWithInfo(String pathToConfigFiles, boolean replaceLoginString, boolean deactivate_ciphers, String pathToConfigFile, String pathToMemoryFile) {
     	
-    	main = this;
+    	//main = this;
     	///////////////////////////////////////////////////////
     	int count = 0;
     	int pos_pathToConfigFiles = count++;
@@ -152,80 +158,93 @@ public class Main extends Tools
     	String [] value = new String [parameter.length];
     	String [] info = new String [parameter.length];
     	boolean [] status_success = new boolean [3];
-    	int [] i_status_success = new int [3];
+    	//int [] i_status_success = new int [3];
+		//ConfigfileStatus configfileStatus = null;
+		List<DAO.ConfigfileStatus> listFileStatus = new ArrayList<ConfigfileStatus>(Collections.nCopies(count, null));
     	///////////////////////////////////////////////////////
     	/* check input params */
     	///////////////////////////////////////////////////////
     	/* check directory with config files*/
-    	if((i_status_success[pos_pathToConfigFiles] = checkDirectoryWithConfigFiles(pathToConfigFiles)) <= 0) {
+		listFileStatus.set(pos_pathToConfigFiles, checkDirectoryWithConfigFiles(pathToConfigFiles));
+    	//if((i_status_success[pos_pathToConfigFiles] = checkDirectoryWithConfigFiles(pathToConfigFiles)) <= 0) {
+		/*if(listFileStatus.get(pos_pathToConfigFiles) == ConfigfileStatus.EXISTING) {
     		this.pathToConfigFiles = pathToConfigFiles;
     		status_success[pos_pathToConfigFiles] = true;
     	} else {
     		status_success[pos_pathToConfigFiles] = false;
 //	    	exitWithError();
-    	}
-    	switch (i_status_success[pos_pathToConfigFiles]) {
-    	case 0:
-    		value[pos_pathToConfigFiles] = "Existing";
-    		break;
-    	case 1:
-    		value[pos_pathToConfigFiles] = "Existing, but not a directory";
-    		break;
-		case 2:
-			value[pos_pathToConfigFiles] = "Not existing";
-			break;
-		case 3:
-			value[pos_pathToConfigFiles] = "Exception";
-			break;
-		case 4:
-			value[pos_pathToConfigFiles] = "Existing, but has no files in it";
-			break;
-		default:
-			break;
+    	}*/
+//    	switch (i_status_success[pos_pathToConfigFiles]) {
+		switch (listFileStatus.get(pos_pathToConfigFiles)) {
+			case EXISTING:
+    			value[pos_pathToConfigFiles] = ConfigfileStatus.EXISTING.toString();
+    			break;
+			case EXISTING_BUT_NOT_A_DIR:
+    			value[pos_pathToConfigFiles] = ConfigfileStatus.EXISTING_BUT_NOT_A_DIR.toString();
+    			break;
+			case NOT_EXISTING:
+				value[pos_pathToConfigFiles] = ConfigfileStatus.NOT_EXISTING.toString();
+				break;
+			case EXCEPTION:
+				value[pos_pathToConfigFiles] = ConfigfileStatus.EXCEPTION.toString();
+				break;
+			case EXISTING_BUT_NO_FILES_CONTAINING:
+				value[pos_pathToConfigFiles] = ConfigfileStatus.EXISTING_BUT_NO_FILES_CONTAINING.toString();
+				break;
+			default:
+				break;
 		}
     	///////////////////////////////////////////////////////
     	/* check memory file */
-    	if((i_status_success[pos_pathToMemoryFile] = checkConfigFile(pathToMemoryFile)) <= 0) {
+		listFileStatus.set(pos_pathToMemoryFile, checkDirectoryWithConfigFiles(pathToMemoryFile));
+		/*if(listFileStatus.get(pos_pathToMemoryFile) == ConfigfileStatus.EXISTING) {
     		this.fileNameWithAllConfigs = pathToMemoryFile;
     		status_success[pos_pathToMemoryFile] = true;
     	} else {
     		status_success[pos_pathToMemoryFile] = false;
-    	}
-    	switch (i_status_success[pos_pathToMemoryFile]) {
-    		case 0:
-    			value[pos_pathToMemoryFile] = "(Right now) Existing, writeable";
+    	}*/
+    	switch (listFileStatus.get(pos_pathToMemoryFile)) {
+			case EXISTING_AND_WRITABLE:
+    			value[pos_pathToMemoryFile] = ConfigfileStatus.EXISTING_AND_WRITABLE.toString();
     			break;
-    		case 1:
-    			value[pos_pathToMemoryFile] = "Not existing and program has no permission to create this file";
+			case NOT_EXISTING_AND_WITHOUT_PERMISSION:
+    			value[pos_pathToMemoryFile] = ConfigfileStatus.NOT_EXISTING_AND_WITHOUT_PERMISSION.toString();
     			break;
-    		case 2:
-    			value[pos_pathToMemoryFile] = "Program has security problems on this file";
+			case SECURITY_PROBLEMS:
+    			value[pos_pathToMemoryFile] = ConfigfileStatus.SECURITY_PROBLEMS.toString();
     			break;
-    		case 3:
-    			value[pos_pathToMemoryFile] = "Exception";
+			case EXCEPTION:
+    			value[pos_pathToMemoryFile] = ConfigfileStatus.EXCEPTION.toString();
+    			break;
+			case NOT_EXISTING:
+    			value[pos_pathToMemoryFile] = ConfigfileStatus.NOT_EXISTING.toString();
     			break;
     	}
     	///////////////////////////////////////////////////////
     	/* check config file */
-    	if((i_status_success[pos_pathToConfigFile] = checkConfigFile(pathToConfigFile)) <= 0) {
+		listFileStatus.set(pos_pathToConfigFile, checkDirectoryWithConfigFiles(pathToConfigFile));
+    	/*if(listFileStatus.get(pos_pathToConfigFile) == ConfigfileStatus.EXISTING) {
     		this.openvpnConfigFile = pathToConfigFile;
     		status_success[pos_pathToConfigFile] = true;
     	} else {
     		status_success[pos_pathToConfigFile] = false;
-    	}
-    	switch (i_status_success[pos_pathToConfigFile]) {
-    	case 0:
-    		value[pos_pathToConfigFile] = "(Right now) Existing, writeable";
-    		break;
-    	case 1:
-    		value[pos_pathToConfigFile] = "Not existing and program has no permission to create this file";
-    		break;
-    	case 2:
-    		value[pos_pathToConfigFile] = "Program has security problems on this file";
-    		break;
-    	case 3:
-    		value[pos_pathToConfigFile] = "Exception";
-    		break;
+    	}*/
+    	switch (listFileStatus.get(pos_pathToConfigFile)) {
+			case EXISTING:
+    			value[pos_pathToConfigFile] = ConfigfileStatus.EXISTING.toString();
+    			break;
+			case NOT_EXISTING_AND_WITHOUT_PERMISSION:
+    			value[pos_pathToConfigFile] = ConfigfileStatus.NOT_EXISTING_AND_WITHOUT_PERMISSION.toString();
+    			break;
+			case SECURITY_PROBLEMS:
+    			value[pos_pathToConfigFile] = ConfigfileStatus.SECURITY_PROBLEMS.toString();
+    			break;
+			case EXCEPTION:
+    			value[pos_pathToConfigFile] = ConfigfileStatus.EXCEPTION.toString();
+	    		break;
+			case NOT_EXISTING:
+    			value[pos_pathToConfigFile] = ConfigfileStatus.NOT_EXISTING.toString();
+	    		break;
     	}
     	///////////////////////////////////////////////////////
     	/* go on */
@@ -238,7 +257,8 @@ public class Main extends Tools
     	value[pos_deactivate_ciphers] = toString(deactivate_ciphers);
     	///////////////////////////////////////////////////////
     	/* get last mod time of file */
-    	int countFiles = 0;
+    	/*
+		int countFiles = 0;
     	if((countFiles = countFiles(pathToConfigFiles)) == 0) {
     		info[pos_pathToConfigFiles] = "Containing no files";
     	} else if(countFiles == 1) {
@@ -246,31 +266,44 @@ public class Main extends Tools
     	} else {
     		info[pos_pathToConfigFiles] = "Containing " + countFiles + " files";
     	}
-    	info[pos_pathToConfigFile] = getLastModTime(new File(pathToConfigFile));
-    	info[pos_pathToMemoryFile] = getLastModTime(new File(pathToMemoryFile));
-    	info[pos_test] = "Run program and read info, but don't modify config file '"+openvpnConfigFile+"'";
+    	*/
+		info[pos_pathToConfigFiles] = "Folder containing config files for vpn connection.";
+		info[pos_pathToConfigFile] = getLastModTime(ConfigFile.CONFIGFILE, pathToConfigFile);
+		info[pos_pathToMemoryFile] = getLastModTime(ConfigFile.MEMORRYFILE,pathToMemoryFile);
+    	//info[pos_test] = "Run program and read info, but do not modify config file '"+openvpnConfigFile+"'.";
+		info[pos_test] = "Run program and read info, but do not modify anything.";
     	info[pos_replaceLoginString] = "Input user login info to config file.";
-    	info[pos_deactivate_ciphers] = "Deactivate cipher info in config file like 'data-ciphers AES-256-GCM'";
+    	info[pos_deactivate_ciphers] = "Deactivate cipher info in config file like 'data-ciphers AES-256-GCM'.";
     	///////////////////////////////////////////////////////
     	if(consoleOut) {
 	    	Table table = Table.create("").addColumns(
 							StringColumn.create("Parameter", parameter),
 							StringColumn.create("Value", value),
 							StringColumn.create("Discription", info)
-					);
+			);
 	    	logger.info("");
 			logger.info(table.print());
     	}
+		/*
 		for(int i=0; i<status_success.length; i++) {
     		if(!status_success[i]) {
     			exitWithError(info[i]);
     		}
     	}
+		*/
+		//for(int i=0; i<listFileStatus.size(); i++
+		for(DAO.ConfigfileStatus configfileStatus: listFileStatus) {
+			if(! configfileStatus.valid()) {
+				int index = listFileStatus.indexOf(configfileStatus);
+				exitWithError(info[index]);
+			}
+		}
     	run();
     }
     private int countFiles(String directory) {
     	return getConfigFilesFromFolder(directory).size();
     }
+	/*
 	private int checkDirectoryWithConfigFiles(String pathToConfigFiles) {
 		File file = new File(pathToConfigFiles);
 		if(consoleOut) {
@@ -301,6 +334,34 @@ public class Main extends Tools
         	e.printStackTrace();
 	        return 3;
 	    }
+	}*/
+	private DAO.ConfigfileStatus checkDirectoryWithConfigFiles(String pathToConfigFiles) {
+		File file = new File(pathToConfigFiles);
+		/*if(consoleOut) {
+			logger.info("Start. Make sure to have at least one ovpn-file in directory '" + file.getAbsolutePath() + "'");
+		}*/
+		try {
+			if(file.exists()) {
+				if(file.isDirectory()) {
+//		        	logger.info("Found directory: '" + file.getAbsolutePath() + "'.");
+					if(hasDirFiles(file.getAbsolutePath())) {
+						return ConfigfileStatus.EXISTING;
+					} else {
+						return ConfigfileStatus.EXISTING_BUT_NO_FILES_CONTAINING;
+					}
+				} else {
+					return ConfigfileStatus.EXISTING_BUT_NOT_A_DIR;
+				}
+			} else {
+				return ConfigfileStatus.NOT_EXISTING;
+			}
+		} catch (Exception e) {
+			if(consoleOut) {
+				logger.error(e.getMessage());
+			}
+			e.printStackTrace();
+			return ConfigfileStatus.EXCEPTION;
+		}
 	}
 	private boolean hasDirFiles(String dirPath) {
 //		return getConfigFilesFromFolder(dirPath).size() > 0;
@@ -311,6 +372,9 @@ public class Main extends Tools
 //    	main = this;
 //        logger = LogManager.getLogger(Main.class);
 //        logger.info("Start. Make sure to have at least one ovpn-file in directory '" + pathToConfigFiles + "'");
+		if(consoleOut) {
+			logger.info("Start. Make sure to have at least one ovpn-file in directory '" + pathToConfigFiles + "'");
+		}
     	list_configNames = getFilenameFromConfigfile(fileNameWithAllConfigs);
     	List<String> list_filesInFolder = getConfigFilesFromFolder(pathToConfigFiles);
 //    	if(consoleOut) {
@@ -443,21 +507,36 @@ public class Main extends Tools
 //        	}
 //        }
 //    }
-    private String getLastModTime(File file) {
-//    	File file = new File(fileNameWithAllConfigs);
-    	String text = null;
-        ///////////////////////////////////////////////////////////////////
-        // Reading config file, saving names to list
-    	long lastModified_ = file.lastModified();
-    	long now_ = Calendar.getInstance().getTimeInMillis();
-    	long diffInSecs = (now_ - lastModified_) / 1000;
-    	int hours = (int) (diffInSecs / 3600);
-    	if(hours > 59) {
-    		text = "Last modification: " + (float) hours / 24 + " days ago";
-    	} else {
-    		text = "Last modification: " + hours + " hours ago";
-    	}
-    	return text;
+    private String getLastModTime(DAO.ConfigFile configFile, String filename) {
+		// Reading config file, saving names to list
+		File file = null;
+		if(filename == null) {
+			return null;
+		} else if ((file = new File(filename)).exists()) {
+			long lastModified_ = file.lastModified();
+			long now_ = Calendar.getInstance().getTimeInMillis();
+			long diffInSecs = (now_ - lastModified_) / 1000;
+			int hours = (int) (diffInSecs / 3600);
+			if (hours > 59) {
+				if(configFile == ConfigFile.CONFIGFILE){
+					return ConfigFile.CONFIGFILE.value + "(Last modification: " + (float) hours / 24 + " days ago)";
+				} else {
+					return ConfigFile.MEMORRYFILE.value + "(Last modification: " + (float) hours / 24 + " days ago)";
+				}
+			} else {
+				if(configFile == ConfigFile.CONFIGFILE){
+					return ConfigFile.CONFIGFILE.value + "(Last modification: " + hours + " hours ago)";
+				} else {
+					return ConfigFile.MEMORRYFILE.value + "(Last modification: " + hours + " hours ago)";
+				}
+			}
+		} else {
+			if(configFile == ConfigFile.CONFIGFILE){
+				return ConfigFile.CONFIGFILE.value;
+			} else {
+				return ConfigFile.MEMORRYFILE.value;
+			}
+		}
     }
     private int checkConfigFile(String fileNameWithAllConfigs)
     {
