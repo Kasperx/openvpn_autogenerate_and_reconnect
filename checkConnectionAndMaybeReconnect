@@ -16,7 +16,7 @@ if [ -z "$1" ] || [ "$1" = "-?" ]; then
 	echo -e "recreate (1) \t-\t= recreate $name_of_connection config"
 	echo -e "reconnect (2) \t-\t= reconnect $name_of_connection connection *1, ignore current status"
 	echo -e "recreate reconnect (1 2) \t= recreate $name_of_connection config, then reconnect $name_of_connection connection *1"
-	echo -e "test \t\t-\t= shows console output"
+	echo -e "-v \t\t-\t= shows console output"
 	echo -e "*1 \t\t-\t= Requirement: active internet connection!"
 	echo "Bye"
 	exit
@@ -26,12 +26,15 @@ fi
 #	sudo apt install -y fping
 #fi
 
-iface=`ifconfig | grep tun`
+#iface=`ifconfig | grep tun`
+iface=`ip a | grep tun`
 #iface=`ip tuntap show`
 #echo "$iface"
 service=`service openvpn status`
 service_id=$?
 #echo $service_id
+iface1=ens18
+iface2=ens19
 
 # -n = string is not null
 # -z = string is null
@@ -53,15 +56,28 @@ date="$(date +%d.%m.%Y-%H.%M)"
 function recreate {
 
 	echo "Recreate config: $(date +%d.%m.%Y-%H.%M)" | tee -a $logfile
+	sudo rm /etc/openvpn/openvpn.ovpn
 	export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-armhf/jre/bin/java
 	if [ "$1" = "-v" ]; then
 #		sudo java -jar /scripte/RegenerateOVPNConfigFile.jar -path /etc/openvpn/configs 2>&1 | tee -a $logfile
 #		sudo java -Dlog4j.configurationFile=bin/java/log4j.xml -jar bin/java/openvpn_autogenerate_and_reconnect-0.0.1-SNAPSHOT-jar-with-dependencies.jar -replace -v 2>&1 | tee -a $logfile
-		sudo java -Dlog4j.configurationFile=bin/java/log4j.xml -jar bin/java/openvpn_autogenerate_and_reconnect-0.0.1-SNAPSHOT-jar-with-dependencies.jar -v -deactivate-ciphers 2>&1 | tee -a $logfile
+		sudo java -Dlog4j.configurationFile=/home/pi/bin/java/log4j.xml \
+			-jar /home/pi/bin/java/openvpn_autogenerate_and_reconnect-0.0.1-SNAPSHOT-jar-with-dependencies.jar \
+			-v \
+			-deactivate-ciphers \
+			--config-file /etc/openvpn/openvpn.ovpn \
+			2>&1 | tee -a $logfile
+#		sudo java -Dlog4j.configurationFile=bin/java/log4j.xml -jar bin/java/openvpn_autogenerate_and_reconnect-0.0.1-SNAPSHOT-jar-with-dependencies.jar -v 2>&1 | tee -a $logfile
 	else
 #		sudo java -jar /scripte/RegenerateOVPNConfigFile.jar -path /etc/openvpn/configs >> $logfile 2>&1
 #                sudo java -Dlog4j.configurationFile=bin/java/log4j.xml -jar bin/java/openvpn_autogenerate_and_reconnect-0.0.1-SNAPSHOT-jar-with-dependencies.jar -replace -v >> $logfile 2>&1
-                sudo java -Dlog4j.configurationFile=bin/java/log4j.xml -jar bin/java/openvpn_autogenerate_and_reconnect-0.0.1-SNAPSHOT-jar-with-dependencies.jar -v -deactivate-ciphers >> $logfile 2>&1
+                sudo java -Dlog4j.configurationFile=/home/pi/bin/java/log4j.xml \
+			-jar /home/pi/bin/java/openvpn_autogenerate_and_reconnect-0.0.1-SNAPSHOT-jar-with-dependencies.jar \
+			-v \
+			-deactivate-ciphers \
+			--config-file /etc/openvpn/openvpn.ovpn \
+			>> $logfile 2>&1
+#                sudo java -Dlog4j.configurationFile=bin/java/log4j.xml -jar bin/java/openvpn_autogenerate_and_reconnect-0.0.1-SNAPSHOT-jar-with-dependencies.jar -v >> $logfile 2>&1
 	fi
 
 }
@@ -93,12 +109,14 @@ function reconnect {
 #	echo "File has ". grep -Rl "curl" ./ -c ."count of lines"
 	echo "vpn restart  ... $(date '+%d.%m.%Y-%H.%M.%S')" | tee -a $logfile
 	echo "reconnect..." | tee -a $logfile
-	sudo systemctl start openvpn
+	sudo systemctl start openvpn@openvpn
 	check_openvpn
         status=$?
         if [ $status -gt 0 ]; then
                 echo "Something wrong with tun interface"
-		sudo openvpn --config /etc/openvpn/openvpn.conf &
+#		sudo openvpn --config /etc/openvpn/openvpn.conf &
+#		sudo openvpn --config /etc/openvpn/openvpn.ovpn &
+		sudo systemctl start openvpn@openvpn
         fi
 ##	sudo openvpn --config /etc/openvpn/openvpn.conf >> /dev/null 2>&1 &
 #	# time for reconnect
@@ -131,12 +149,14 @@ function reconnect {
 	sleep 10
 	echo "vpn restart  ... $(date '+%d.%m.%Y-%H.%M.%S')" >> $logfile 2>&1
 	echo "reconnect..." >> $logfile 2>&1
-	sudo systemctl start openvpn >> /dev/null 2>&1
+	sudo systemctl start openvpn@openvpn >> /dev/null 2>&1
 	check_openvpn
         status=$?
         if [ $status -gt 0 ]; then
                 echo "Something wrong with tun interface"
-		sudo openvpn --config /etc/openvpn/openvpn.conf & >> /dev/null 2>&1
+#		sudo openvpn --config /etc/openvpn/openvpn.conf & >> /dev/null 2>&1
+#		sudo openvpn --config /etc/openvpn/openvpn.ovpn & >> /dev/null 2>&1
+		sudo systemctl start openvpn@openvpn
         fi
 	#echo "vpn restart  ... $(date '+%d.%m.%Y-%H.%M.%S')" >> $logfile 2>&1
 #	sudo openvpn --config /etc/openvpn/openvpn.conf >> /dev/null 2>&1 &
@@ -163,34 +183,10 @@ function check_normal {
 #	if [ -n "`timeout 2.0 ping -I eth0 -c 1 web.de`" ] && [ -n "`timeout 2.0 ping -I eth0 -c 1 gmx.de`" ];then
 #	if [ -n "`timeout 2.0 ping -I eth0 -c 1 ${web_address_1}`" ] && [ -n "`timeout 2.0 ping -I eth0 -c 1 ${web_address_2}`" ];then
 #	if [ -n "`ping -I eth0 -c 1 -w 1 ${web_address_1} >> /dev/null 2>&1`" ] && [ -n "`ping -I eth0 -c 1 -w 1 ${web_address_2} >> /dev/null 2>&1`" ];then
-	if ping -I eth0 -c 1 -w 1 ${web_address_1} >> /dev/null 2>&1 && ping -I eth0 -c 1 -w 1 ${web_address_2} >> /dev/null 2>&1 ;then
+	if ping -I $iface1 -c 1 -w 1 ${web_address_1} >> /dev/null 2>&1 && \
+	   ping -I $iface1 -c 1 -w 1 ${web_address_2} >> /dev/null 2>&1 ;then
 
 #		echo "Internet connected"
-		return 0
-
-	else
-
-#		echo "No internet connection"
-		return 1
-
-	fi
-}
-### check normal tcp connection
-function check_normal_test {
-
-#	if [ -n "`timeout 2.0 ping -I eth0 -c 1 web.de`" ] && [ -n "`timeout 2.0 ping -I eth0 -c 1 gmx.de`" ];then
-#	if [ -n "`timeout 2.0 ping -I eth0 -c 1 ${web_address_1}`" ] && [ -n "`timeout 2.0 ping -I eth0 -c 1 ${web_address_2}`" ];then
-#	if [ -n "`ping -I eth0 -c 1 -w 1 ${web_address_1} >> /dev/null 2>&1`" ];then
-#	if [ ping -I eth0 -c 1 -w 1 ${web_address_1} >> /dev/null 2>&1 ];then
-	if ping -I eth0 -c 1 -w 1 ${web_address_1} >> /dev/null 2>&1 ;then
-
-#		echo "Internet connected to ${web_address_1}"
-		return 0
-
-#	elif [ -n "`ping -I eth0 -c 1 -w 1 ${web_address_2} >> /dev/null 2>&1`" ];then
-	elif ping -I eth0 -c 1 -w 1 ${web_address_2} >> /dev/null 2>&1 ;then
-
-#		echo "Internet connected to ${web_address_2}"
 		return 0
 
 	else
@@ -208,7 +204,8 @@ function check_openvpn {
 #	if [ -z "$iface" ] && [ -z "`timeout 2.0 ping -I tun0 -c 1 ${web_address_1}`" ] && [ -z "`timeout 2.0 ping -I tun0 -c 1 ${web_address_2}`" ]; then
 #	if [ -z "`timeout 2.0 ping -I tun0 -c 1 ${web_address_1}`" ] && [ -z "`timeout 2.0 ping -I tun0 -c 1 ${web_address_2}`" ]; then
 #	if [ -z "`timeout 2.0 ping -I tun0 -c 1 ${web_address_1} >> /dev/null 2>&1`" ] && [ -z "`timeout 2.0 ping -I tun0 -c 1 ${web_address_2} >> /dev/null 2>&1`" ]; then
-	if [ -z "`ping -I tun0 -c 1 -w 1 ${web_address_1} >> /dev/null 2>&1`" ] && [ -z "`ping -I tun0 -c 1 -w 1 ${web_address_2} >> /dev/null 2>&1`" ]; then
+	if [ -z "`ping -I tun0 -c 1 -w 1 ${web_address_1} >> /dev/null 2>&1`" ] && \
+	   [ -z "`ping -I tun0 -c 1 -w 1 ${web_address_2} >> /dev/null 2>&1`" ]; then
 
 		if [ -z "$iface" ]; then
 
@@ -460,7 +457,7 @@ if [ "$var" = "check" ] || [ "$var" = "auto" ];then
 #elif [ "$var" = "reconnect" ] || [ "$var" = "recreate" ];then
 elif [ "$var" = "reconnect" ] || [ "$var" = "2" ];then
 
-	if [ "$var2" = "test" ];then
+	if [ "$var2" = "-v" ];then
 		echo "####################################################" | tee -a $logfile
 		reconnect -v
 	else
@@ -470,9 +467,9 @@ elif [ "$var" = "reconnect" ] || [ "$var" = "2" ];then
 
 elif [ "$var" = "recreate" ] || [ "$var" = "1" ];then
 
-	if [ "$var2" = "reconnect" ] || [ "$var" = "2" ];then
+	if [ "$var2" = "reconnect" ] || [ "$var2" = "2" ];then
 
-		if [ "$var3" = "test" ];then
+		if [ "$var3" = "-v" ];then
 			echo "####################################################" | tee -a $logfile
 			recreate -v
 			reconnect -v
@@ -484,7 +481,7 @@ elif [ "$var" = "recreate" ] || [ "$var" = "1" ];then
 
 	else
 
-		if [ "$var3" = "test" ];then
+		if [ "$var2" = "-v" ];then
 			echo "####################################################" | tee -a $logfile
 			recreate -v
 		else
