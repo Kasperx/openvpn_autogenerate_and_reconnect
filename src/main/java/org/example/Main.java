@@ -27,14 +27,23 @@ public class Main extends Tools
 			System.setProperty("log4j.configurationFile", System.getProperty("user.dir")+"/config/log4j.xml");
 		}
 	}
-	Main main;
-	
+	//Main main;
     public Main(){}
-    
-    private void exitWithError(String text) {
+    private void showErrorAndExit(String text) {
     	if(consoleOut) {
 			if(StringUtils.isNotEmpty(text)) {
-				logger.error(text);
+				logger.error("Error: " + text);
+				logger.error("Exit");
+			} else {
+				logger.error("Exit");
+			}
+    	}
+    	System.exit(1);
+    }
+    private void showError(String text) {
+    	if(consoleOut) {
+			if(StringUtils.isNotEmpty(text)) {
+				logger.error("Error: " + text);
 				logger.error("Exit");
 			} else {
 				logger.error("Exit");
@@ -44,10 +53,6 @@ public class Main extends Tools
     }
     private void showInfo(String pathToConfigFiles, boolean replaceLoginString, String pathToConfigFile) {
 		logger.info("###");
-//		logger.info("Parameter:");
-//		logger.info("\tPath to config file: \t'"+pathToConfigFile+"'");
-//		logger.info("\tReplace login info in openvpn file: \t'"+replaceLoginString+"'");
-//		logger.info("\tPath to dir with config files: \t'"+pathToConfigFiles+"'");
 		String[] line = {
 				pathToConfigFiles,
 				pathToConfigFile,
@@ -73,47 +78,19 @@ public class Main extends Tools
     }
     private void run(String pathToConfigFiles, boolean replaceLoginString, String pathToConfigFile) {
 
-    	main = this;
+    	//main = this;
     	if(consoleOut) {
     		showInfo(pathToConfigFiles, replaceLoginString, pathToConfigFile);
     	}
-    	//boolean [] status_success = new boolean [2];
-    	/**************************/
     	/* check input params */
     	/**************************/
-    	/* check directory with config files*/
-		//DAO.ConfigfileStatus configfileStatus = checkDirectoryWithConfigFiles(pathToConfigFiles);
-//	    if(checkDirectoryWithConfigFiles(pathToConfigFiles) <= 0) {
 		List<DAO.ConfigfileStatus> listFileStatus = new ArrayList<ConfigfileStatus>(Collections.nCopies(10, null));
 		listFileStatus.set(0, checkDirectoryWithConfigFiles(pathToConfigFile));
 		listFileStatus.set(1, checkDirectoryWithConfigFiles(pathToConfigFiles));
-		/*
-	    if(checkDirectoryWithConfigFiles(pathToConfigFiles) == ConfigfileStatus.EXISTING) {
-	    	this.pathToConfigFiles = pathToConfigFiles;
-	    	status_success[0] = true;
-	    } else {
-	    	status_success[0] = false;
-//	    	exitWithError();
-	    }
-	    /**************************/
-	    /* check config files*
-	    if(checkDirectoryWithConfigFiles(pathToConfigFile) == ConfigfileStatus.EXISTING) {
-	    	status_success[1] = true;
-	    } else {
-	    	status_success[1] = false;
-	    }
-	    /**************************
-		*/
-	    /* go on */
-	    /*for(boolean status: status_success) {
-	    	if(!status) {
-	    		exitWithError(null);
-	    	}
-	    }*/
 		for(DAO.ConfigfileStatus configfileStatus: listFileStatus) {
 			if(! configfileStatus.valid()) {
 				int index = listFileStatus.indexOf(configfileStatus);
-				exitWithError(null);
+				showErrorAndExit(null);
 			}
 		}
 		this.replaceLoginString = replaceLoginString;
@@ -127,9 +104,8 @@ public class Main extends Tools
 		run();
 	}
     private void runWithInfo(String pathToConfigFiles, boolean replaceLoginString, boolean deactivate_ciphers, String pathToConfigFile, String pathToMemoryFile) {
-    	
-    	//main = this;
-    	///////////////////////////////////////////////////////
+
+		logger = LogManager.getLogger(this.getClass());
     	int count = 0;
     	int pos_pathToConfigFiles = count++;
     	int pos_pathToConfigFile = count++;
@@ -158,23 +134,10 @@ public class Main extends Tools
     	String [] value = new String [parameter.length];
     	String [] info = new String [parameter.length];
     	boolean [] status_success = new boolean [3];
-    	//int [] i_status_success = new int [3];
-		//ConfigfileStatus configfileStatus = null;
 		List<DAO.ConfigfileStatus> listFileStatus = new ArrayList<ConfigfileStatus>(Collections.nCopies(count, null));
-    	///////////////////////////////////////////////////////
-    	/* check input params */
     	///////////////////////////////////////////////////////
     	/* check directory with config files*/
 		listFileStatus.set(pos_pathToConfigFiles, checkDirectoryWithConfigFiles(pathToConfigFiles));
-    	//if((i_status_success[pos_pathToConfigFiles] = checkDirectoryWithConfigFiles(pathToConfigFiles)) <= 0) {
-		/*if(listFileStatus.get(pos_pathToConfigFiles) == ConfigfileStatus.EXISTING) {
-    		this.pathToConfigFiles = pathToConfigFiles;
-    		status_success[pos_pathToConfigFiles] = true;
-    	} else {
-    		status_success[pos_pathToConfigFiles] = false;
-//	    	exitWithError();
-    	}*/
-//    	switch (i_status_success[pos_pathToConfigFiles]) {
 		switch (listFileStatus.get(pos_pathToConfigFiles)) {
 			case EXISTING:
     			value[pos_pathToConfigFiles] = ConfigfileStatus.EXISTING.toString();
@@ -197,12 +160,6 @@ public class Main extends Tools
     	///////////////////////////////////////////////////////
     	/* check memory file */
 		listFileStatus.set(pos_pathToMemoryFile, checkDirectoryWithConfigFiles(pathToMemoryFile));
-		/*if(listFileStatus.get(pos_pathToMemoryFile) == ConfigfileStatus.EXISTING) {
-    		this.fileNameWithAllConfigs = pathToMemoryFile;
-    		status_success[pos_pathToMemoryFile] = true;
-    	} else {
-    		status_success[pos_pathToMemoryFile] = false;
-    	}*/
     	switch (listFileStatus.get(pos_pathToMemoryFile)) {
 			case EXISTING_AND_WRITABLE:
     			value[pos_pathToMemoryFile] = ConfigfileStatus.EXISTING_AND_WRITABLE.toString();
@@ -223,12 +180,6 @@ public class Main extends Tools
     	///////////////////////////////////////////////////////
     	/* check config file */
 		listFileStatus.set(pos_pathToConfigFile, checkDirectoryWithConfigFiles(pathToConfigFile));
-    	/*if(listFileStatus.get(pos_pathToConfigFile) == ConfigfileStatus.EXISTING) {
-    		this.openvpnConfigFile = pathToConfigFile;
-    		status_success[pos_pathToConfigFile] = true;
-    	} else {
-    		status_success[pos_pathToConfigFile] = false;
-    	}*/
     	switch (listFileStatus.get(pos_pathToConfigFile)) {
 			case EXISTING:
     			value[pos_pathToConfigFile] = ConfigfileStatus.EXISTING.toString();
@@ -256,21 +207,10 @@ public class Main extends Tools
     	value[pos_test] = toString(test);
     	value[pos_deactivate_ciphers] = toString(deactivate_ciphers);
     	///////////////////////////////////////////////////////
-    	/* get last mod time of file */
-    	/*
-		int countFiles = 0;
-    	if((countFiles = countFiles(pathToConfigFiles)) == 0) {
-    		info[pos_pathToConfigFiles] = "Containing no files";
-    	} else if(countFiles == 1) {
-    		info[pos_pathToConfigFiles] = "Containing 1 file";
-    	} else {
-    		info[pos_pathToConfigFiles] = "Containing " + countFiles + " files";
-    	}
-    	*/
 		info[pos_pathToConfigFiles] = "Folder containing config files for vpn connection.";
+		/* get last mod time of file */
 		info[pos_pathToConfigFile] = getLastModTime(ConfigFile.CONFIGFILE, pathToConfigFile);
 		info[pos_pathToMemoryFile] = getLastModTime(ConfigFile.MEMORRYFILE,pathToMemoryFile);
-    	//info[pos_test] = "Run program and read info, but do not modify config file '"+openvpnConfigFile+"'.";
 		info[pos_test] = "Run program and read info, but do not modify anything.";
     	info[pos_replaceLoginString] = "Input user login info to config file.";
     	info[pos_deactivate_ciphers] = "Deactivate cipher info in config file like 'data-ciphers AES-256-GCM'.";
@@ -283,63 +223,28 @@ public class Main extends Tools
 			);
 	    	logger.info("");
 			logger.info(table.print());
-    	}
-		/*
-		for(int i=0; i<status_success.length; i++) {
-    		if(!status_success[i]) {
-    			exitWithError(info[i]);
-    		}
-    	}
-		*/
-		//for(int i=0; i<listFileStatus.size(); i++
+			logger.info("");
+		}
+		boolean foundError = false;
 		for(DAO.ConfigfileStatus configfileStatus: listFileStatus) {
 			if(! configfileStatus.valid()) {
+				foundError = true;
 				int index = listFileStatus.indexOf(configfileStatus);
-				exitWithError(info[index]);
+				if(consoleOut) {
+					showError(parameter[index] + ": " + value[index]);
+				}
 			}
+		}
+		if(foundError){
+			System.exit(1);
 		}
     	run();
     }
     private int countFiles(String directory) {
     	return getConfigFilesFromFolder(directory).size();
     }
-	/*
-	private int checkDirectoryWithConfigFiles(String pathToConfigFiles) {
-		File file = new File(pathToConfigFiles);
-		if(consoleOut) {
-			logger.info("Start. Make sure to have at least one ovpn-file in directory '" + file.getAbsolutePath() + "'");
-		}
-		try {
-	    	if(file.exists()) {
-		        if(file.isDirectory()) {
-//		        	logger.info("Found directory: '" + file.getAbsolutePath() + "'.");
-		        	if(hasDirFiles(file.getAbsolutePath())) {
-		        		return 0;
-		        	} else {
-		        		return 4;
-		        	}
-		        } else {
-//		        	logger.error("Directoryname '" + file.getAbsolutePath() + "' is not a directory.");
-		        	return 1;
-		        }
-	    	} else {
-//	    		logger.error("Directory '" + file.getAbsolutePath() + "' does not exist.");
-	    		return 2;
-	    	}
-	    	
-	    } catch (Exception e) {
-	    	if(consoleOut) {
-    			logger.error(e.getMessage());
-	    	}
-        	e.printStackTrace();
-	        return 3;
-	    }
-	}*/
 	private DAO.ConfigfileStatus checkDirectoryWithConfigFiles(String pathToConfigFiles) {
 		File file = new File(pathToConfigFiles);
-		/*if(consoleOut) {
-			logger.info("Start. Make sure to have at least one ovpn-file in directory '" + file.getAbsolutePath() + "'");
-		}*/
 		try {
 			if(file.exists()) {
 				if(file.isDirectory()) {
@@ -359,71 +264,25 @@ public class Main extends Tools
 			if(consoleOut) {
 				logger.error(e.getMessage());
 			}
-			e.printStackTrace();
+			logger.error(e);
 			return ConfigfileStatus.EXCEPTION;
 		}
 	}
 	private boolean hasDirFiles(String dirPath) {
-//		return getConfigFilesFromFolder(dirPath).size() > 0;
 		return countFiles(dirPath) > 0;
 	}
     private void run()
     {
-//    	main = this;
-//        logger = LogManager.getLogger(Main.class);
-//        logger.info("Start. Make sure to have at least one ovpn-file in directory '" + pathToConfigFiles + "'");
 		if(consoleOut) {
 			logger.info("Start. Make sure to have at least one ovpn-file in directory '" + pathToConfigFiles + "'");
 		}
     	list_configNames = getFilenameFromConfigfile(fileNameWithAllConfigs);
     	List<String> list_filesInFolder = getConfigFilesFromFolder(pathToConfigFiles);
-//    	if(consoleOut) {
-//    		logger.info("Found "+list_filesInFolder.size()+" files in folder "+pathToConfigFiles);
-//    	}
     	/*
     	 * if info file is empty (so all files were used already) -> read config files from folder and save to file 
     	 */
     	list_configNames = getConfigFileFromMemoryFile(list_configNames, list_filesInFolder);
-//        // if "fileNameWithAllConfigs" still exists and has only one name, delete it. Needed config file is already loaded
-//        if (list_configName.size() == 1) {
-//        	File file = new File(fileNameWithAllConfigs);
-//        	if(consoleOut) {
-//				logger.info("One known config file left. Recreating memory file '"+fileNameWithAllConfigs+"'.");
-//        	}
-//        	if (file.exists()) {
-//        		file.delete();
-//        	}
-//        	///////////////////////////////////////////////////////////////////
-//        	// read config files, write to memory file
-//        	list_filesInFolder = getConfigFilesFromFolder(pathToConfigFiles);
-//        	if(consoleOut) {
-//        		logger.info("Found "+list_filesInFolder.size()+" files in folder "+pathToConfigFiles);
-//        	}
-//        } else if(list_configName.size() == 0) {
-//        	File file = new File(fileNameWithAllConfigs);
-//        	if (file.exists()) {
-//        		file.delete();
-//        	}
-//        	if(consoleOut) {
-//				logger.info("Creating memory file with file names.");
-//        	}
-//        	///////////////////////////////////////////////////////////////////
-//        	// read config files, write to memory file
-//        	list_filesInFolder = getConfigFilesFromFolder(pathToConfigFiles);
-//        	if(consoleOut) {
-//        		logger.info("Found "+list_filesInFolder.size()+" files in folder "+pathToConfigFiles);
-//        	}
-//        } else {
-//        	// do nothing
-//        	;
-//        }
-//        if(!test) {
-//        	writeConfigFileNamesToConfig(fileNameWithAllConfigs, list_filesInFolder);
-//        }
         String newConfigName = getRandomFileAndRewriteToMemoryFile(fileNameWithAllConfigs, list_configNames, list_filesInFolder);
-        /// test
-        logger.info("new config file: "+newConfigName);
-        /// test
         if(!test) {
         	createNewOVPNFile(newConfigName);
         }
@@ -431,82 +290,15 @@ public class Main extends Tools
     private List<String> getConfigFileFromMemoryFile(List<String> list_configNamesFromMemoryFile, List<String> list_filesInFolder) {
     	// if "fileNameWithAllConfigs" still exists and has only one name, delete it. Needed config file is already loaded
         if (list_configNamesFromMemoryFile.size() == 1) {
-        	///////////////////////////////////////////////////////////////////
         	// get last name from memoryfile
-//        	writeFile(fileNameWithAllConfigs, list_filesInFolder);
         } else if(list_configNamesFromMemoryFile.size() == 0) {
-//        	writeFile(fileNameWithAllConfigs, "");
-        	///////////////////////////////////////////////////////////////////
         	// read files from folder, write to memoryfile
         	list_configNamesFromMemoryFile = list_filesInFolder;
-//        	writeFile(fileNameWithAllConfigs, list_configNamesFromMemoryFile);
-//        	if(consoleOut) {
-//        		logger.info("Found "+list_filesInFolder.size()+" files in folder "+pathToConfigFiles);
-//        	}
         } else /* if(list_configName.size() > 1) */{
-        	// do nothing
         	;
         }
-//        if(!test) {
-//        	writeConfigFileNamesToConfig(fileNameWithAllConfigs, list_filesInFolder);
-//        }
         return list_configNamesFromMemoryFile;
     }
-//    private int readConfigFiles()
-//    {
-//
-//        File file = new File(fileNameWithAllConfigs);
-//        ///////////////////////////////////////////////////////////////////
-//        // Reading config file, saving names to list
-//        if (file.exists()) {
-//        	
-//        	long lastModified_ = file.lastModified();
-//        	long now_ = Calendar.getInstance().getTimeInMillis();
-//        	long diffInSecs = (now_ - lastModified_) / 1000;
-//        	int hours = (int) (diffInSecs / 3600);
-//        	
-////        	list_configName = new ArrayList<String>();
-//        	list_configName = Tools.loadFile(fileNameWithAllConfigs);
-//        	logger.info("Found information file: " + fileNameWithAllConfigs+ " with " + list_configName.size() + " files.");
-//        	
-//        	if(hours > 59) {
-//        		logger.info("Last modification: " + (float) hours / 24 + " days ago");
-//        	} else {
-//        		logger.info("Last modification: " + hours + " hours ago");
-//        	}
-//        	return 0;
-//        	
-//        } else {
-//        	
-//        	try {
-//        		if(file.createNewFile()) {
-//        			logger.info("Created file: '" + fileNameWithAllConfigs + "'.");
-//        		} else {
-//        			logger.info("File already exists: '" + fileNameWithAllConfigs + "'.");
-////                	logger.info("Exit.");
-////                	logger.info("No information file created. Exit");
-////        			System.exit(0);
-//        			return 2;
-//        		}
-//        		return 0;
-//        		
-//        	} catch(IOException e) {
-//        		logger.error("File '" + fileNameWithAllConfigs + "' does not exist and program has no permission to create this file.");
-////        		logger.error("Exit.");
-////        		System.exit(1);
-//        		return 3;
-//        	} catch(SecurityException e) {
-//        		logger.error("Program has security problems on this file.");
-////        		logger.error("Exit");
-////        		System.exit(1);
-//        		return 4;
-//        	} catch(Exception e) {
-//        		e.printStackTrace();
-////        		System.exit(1);
-//        		return 5;
-//        	}
-//        }
-//    }
     private String getLastModTime(DAO.ConfigFile configFile, String filename) {
 		// Reading config file, saving names to list
 		File file = null;
@@ -538,72 +330,22 @@ public class Main extends Tools
 			}
 		}
     }
-    private int checkConfigFile(String fileNameWithAllConfigs)
-    {
-    	File file = new File(fileNameWithAllConfigs);
-    	///////////////////////////////////////////////////////////////////
-    	// Reading config file, saving names to list
-    	if (file.exists()) {
-//    		list_configName = Tools.loadFile(fileNameWithAllConfigs);
-//    		logger.info("Found information file: " + fileNameWithAllConfigs + "'.");
-//    		this.fileNameWithAllConfigs = fileNameWithAllConfigs;
-    		return 0;
-    	} else {
-    		try {
-    			if(file.createNewFile()) {
-//    				logger.info("Created file: '" + fileNameWithAllConfigs + "'.");
-    			} else {
-//    				logger.info("File already exists: '" + fileNameWithAllConfigs + "'.");
-    			}
-    			this.fileNameWithAllConfigs = fileNameWithAllConfigs;
-    			return 0;
-    		} catch(IOException e) {
-//    			logger.error("File '" + fileNameWithAllConfigs + "' does not exist and program has no permission to create this file.");
-    			return 1;
-    		} catch(SecurityException e) {
-//    			logger.error("Program has security problems on this file.");
-    			return 2;
-    		} catch(Exception e) {
-    			e.printStackTrace();
-    			return 3;
-    		}
-    	}
-    }
-    private void writeConfigFileNamesToConfig(String fileNameWithAllConfigs, List<File> configFiles) {
-    	String allConfigs = "";
-    	for(File configName : configFiles)
-        {
-            allConfigs += configName.toString() /*+ "\n"*/;
-        }
-    	if(consoleOut) {
-    		logger.info("Writing "+configFiles.size()+" filenames to memory file '"+fileNameWithAllConfigs+"'");
-    	}
-        Tools.writeFile(fileNameWithAllConfigs, allConfigs);
-    }
-    private List<String> getConfigFilesFromFolder(String pathToConfigFiles)
-    {
-//        logger.info("Reading config files from folder: '" + pathToConfigFiles + "'.");
-        // Source:
-        // https://stackoverflow.com/questions/1844688/how-to-read-all-files-in-a-folder-from-java
+    private List<String> getConfigFilesFromFolder(String pathToConfigFiles) {
         try {
         	List<File> list_filesInFolder = new ArrayList<>();
-//            list_configNames = new ArrayList<String>();
-            list_filesInFolder = 
+            list_filesInFolder =
             		Files
                     	.walk(Paths.get(pathToConfigFiles))
                         .filter(Files::isRegularFile)
                         .map(Path::toFile)
                         .collect(Collectors.toList());
             if(list_filesInFolder.size() > 0) {
-//	            logger.info("Found " + list_filesInFolder.size() + " files.");
 	            // store fileNameWithAllConfigss to info file
-//	            String allConfigs = "";
                 List<String> list_configName = new ArrayList<>();
 	            for(File configName : list_filesInFolder)
 	            {
 	                list_configName.add(configName.getAbsolutePath() /*+"\n"*/ ) ;
 	            }
-//	            Tools.writeFile(fileNameWithAllConfigs, allConfigs);
 	            return list_configName;
             
             } else {
@@ -612,33 +354,22 @@ public class Main extends Tools
     				logger.error("Directory '" + pathToConfigFiles + "' has no files.");
             	}
             	return new ArrayList<String>();
-            	
             }
         } catch(Exception e) {
         	if(consoleOut) {
 				e.getMessage();
         	}
-            e.printStackTrace();
+			logger.error(e);
             return new ArrayList<String>();
         }
     }
-//    private String getRandomFile(List<File> list_filesInFolder)
     private String getRandomFileAndRewriteToMemoryFile(String fileNameWithAllConfigs, List<String> list_configName, List<String> list_filesFromFolder)
     {
         String newConfigName = "";
 
         try
         {
-//        	/// test
-//        	logger.info("####################################");
-//        	logger.info("memory file "+fileNameWithAllConfigs);
-//        	logger.info("list files from memory "+list_configName);
-//        	logger.info("list files from folder "+list_filesFromFolder);
-//        	logger.info("####################################");
-//        	/// test
-        	///////////////////////////////////////////////////////////////////
             if (list_configName != null && list_configName.size() > 1) {
-//                return (int) ((Math.random() * (max - min)) + min);
             	int random = (int) ((Math.random() * (
                 		(list_configName.size() - 1) - 0)
                 		) + 0);
@@ -654,41 +385,18 @@ public class Main extends Tools
                 }
                 Tools.writeEmptyFile(fileNameWithAllConfigs);
                 Tools.writeFile(fileNameWithAllConfigs, allConfigs);
-            ///////////////////////////////////////////////////////////////////
             } else if (list_configName.size() == 1) {
             	newConfigName = list_configName.get(0);
             	Tools.writeEmptyFile(fileNameWithAllConfigs);
             	Tools.writeFile(fileNameWithAllConfigs, list_filesFromFolder);
-        	///////////////////////////////////////////////////////////////////
             }
-//            else /* if (list_filesInFolder.size() == 0) */ {
-//            	if(consoleOut) {
-//    				logger.info("All loaded config files used, Deleting info file '" + fileNameWithAllConfigs + "' (Will be recreated on next runtime).");
-//            	}
-//                if (file.exists()) {
-//                	if(file.delete()) {
-//                		if(consoleOut) {
-//            				logger.info("File deleted.");
-//                		}
-//                	} else {
-//                		if(consoleOut) {
-//            				logger.info("File not deleted.");
-//                		}
-//                	}
-//                } else {
-//                	if(consoleOut) {
-//        				logger.info("File does not exist.");
-//                	}
-//                }
-//            }
-            
         } catch(Exception e) {
         	if(consoleOut) {
 				logger.error("list_configName == null? "+list_configName == null);
 				logger.error("list_configName count of elements: "+list_configName.size());
         		logger.error(e.getMessage());
         	}
-            e.printStackTrace();
+			logger.error(e);
             if(list_configName == null || list_configName.size() <= 0) {
             	return null;
             } else {
@@ -709,7 +417,7 @@ public class Main extends Tools
 				logger.info("##############################");
 			}
 			// Replacing line with login-data-txt-file
-			// ... Some config files dont need the login info, its already stored in key, so no need to replace ...
+			// ... Some config files don't need the login info, it's already stored in key, so no need to replace ...
 			for(int i = 0; i < fileContent.size(); i++) {
 				if(consoleOut) {
 					logger.info(fileContent.get(i));
@@ -721,7 +429,7 @@ public class Main extends Tools
 				logger.info("##############################");
 			}
 		} catch (IOException e) {
-			e.printStackTrace();
+			logger.error(e);
 		}
 }
     
@@ -729,7 +437,6 @@ public class Main extends Tools
     {
         try
         {
-//        	checkFileContent(newConfig);
             // write new config file
             Files.copy(
             		Paths.get(newConfig),
@@ -799,95 +506,11 @@ public class Main extends Tools
         		logger.error("openvpnConfigFile: '" +openvpnConfigFile+ "', file exists? "+ new File(openvpnConfigFile).exists());
         		logger.error(e.getMessage());
         	}
-            e.printStackTrace();
+			logger.error(e);
         }
     }
-
-//    public static List<String> loadFile(String fpath)
-//    {
-//        try {
-//            return new ArrayList<>(
-//                    Files.readAllLines(
-//                            Paths.get(fpath),
-//                            StandardCharsets.UTF_8)
-//                    );
-//
-//        } catch(Exception e) {
-//            e.printStackTrace();
-//            return new ArrayList<String>();
-//        }
-//    }
-
-    // public static Vector loadFileByLines(String fpath)
-    // {
-    // Vector lines = new Vector();
-    // String line;
-    // FileReader finr = null;
-    // BufferedReader finb = null;
-    //
-    // try
-    // {
-    // finr = new FileReader(fpath);
-    // finb = new BufferedReader(finr);
-    //
-    // while((line = finb.readLine()) != null)
-    // lines.addElement(line);
-    // closeData(fpath, finr, finb);
-    // finb = null; finr = null;
-    // }
-    // catch (IOException e)
-    // {
-    // logger.info("#### Datei " + fpath + " kann nicht geöffnet werden:
-    // " + e);
-    // closeData(fpath, finr, finb);
-    // lines.removeAllElements();
-    // finb = null; finr = null;
-    // }
-    // return(lines);
-    // }
-
-//    public static void closeData(String fname, FileReader finr, BufferedReader finb)
-//    {
-//        try {
-//            if(finb != null) {
-//                finb.close();
-//            }
-//            if(finr != null)
-//            {
-//                finr.close();
-//            }
-//        } catch(IOException e) {
-////            logger.info("#### File " + fname + " can not be closed: " + e);
-//            e.printStackTrace();
-//        }
-//    }
-
-//    private static void writeFile(String file, String content)
-//    {
-//        try {
-//            FileWriter fw = new FileWriter(file);
-//            BufferedWriter bw = new BufferedWriter(fw);
-//            bw.write(content);
-//            bw.flush();
-//            bw.close();
-//            fw.close();
-//        } catch(Exception e) {
-//            e.printStackTrace();
-//        }
-//    }
-
-//    private static boolean isNextPositionEndOfArray(String[] args, int position)
-//    {
-//        if(args.length - 1 >= position + 1) {
-//            return false;
-//        } else {
-//            return true;
-//        }
-//    }
-
     private void showHelp ()
     {
-//        logger.info("Description");
     	logger.info("This program can find ovpn-config-files from a specific folder, read a random file from it and regenerate a new ovpn-config-file to the ovpn-working-dir.");
     	logger.info("Syntax: Main [-h|-?|-help] [-path] [-replace]");
     	logger.info("Options:");
@@ -908,11 +531,9 @@ public class Main extends Tools
     
     public static void main(String[] args)
     {
-        ///////////////////////////////////////////////////////////////////
         // telling java to really run headless, otherwise an exception is thrown
         System.setProperty("java.awt.headless", "true");
         Main main = new Main();
-        main.logger = LogManager.getLogger(Main.class);
         String pathToConfigFiles = null;
         String pathToMemoryFile = null;
         String pathToConfigFile = null;
@@ -932,12 +553,6 @@ public class Main extends Tools
     			main.test = true;
     		}
     	}
-//        ///////////////////////////////////////////////////////////////////
-//        // read all data from input
-//        if(args.length == 0) {
-//        	main.logger.info("No input found. Exit...");
-//            System.exit(0);
-//        }
         for(int i = 0; i < args.length; i++) {
             if(args.length == 1 && args[i].startsWith("-") && (
                     args[i].toLowerCase().contains("h")
@@ -947,7 +562,6 @@ public class Main extends Tools
                     )
             {
                 main.showHelp();
-//                System.exit(0);
             }
             if(args[i].equals("--path") && !Tools.isNextPositionEndOfArray(args, i)) {
             	pathToConfigFiles = args[i + 1];
@@ -965,7 +579,6 @@ public class Main extends Tools
             	pathToConfigFile = args[i + 1];
             }
         }
-//        main.run(pathToConfigFiles, replaceLoginString, pathToConfigFile);
         main.runWithInfo(pathToConfigFiles, replaceLoginString, deactivate_ciphers, pathToConfigFile, pathToMemoryFile);
     }
 }
