@@ -20,8 +20,8 @@ public class DAO {
     
 //    static final Logger logger = Logger.getLogger(RegenerateOVPNConfigFile.class.getName());
     public Logger logger;
-    boolean test = false;
-    boolean consoleOut = false;
+    public static boolean test = false;
+    public static boolean consoleOut = false;
     protected  enum ConfigfileStatus {
         NOT_EXISTING("Not existing"),
         NOT_EXISTING_AND_WITHOUT_PERMISSION("Not existing and program has no permission to create this file"),
