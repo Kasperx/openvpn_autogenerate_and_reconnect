@@ -1,5 +1,5 @@
 
-package main.java.org.example;
+package main.java.org.main;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -219,7 +219,7 @@ public class Program extends Tools {
 		}
 		boolean foundError = false;
 		for(ConfigfileStatus configfileStatus: listFileStatus) {
-			if(! configfileStatus.valid()) {
+			if(configfileStatus != null && ! configfileStatus.valid()) {
 				foundError = true;
 				int index = listFileStatus.indexOf(configfileStatus);
 				if(consoleOut) {

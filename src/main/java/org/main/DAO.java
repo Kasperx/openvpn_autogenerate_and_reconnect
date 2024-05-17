@@ -1,5 +1,5 @@
 
-package main.java.org.example;
+package main.java.org.main;
 
 import java.util.List;
 
