@@ -1,5 +1,5 @@
 
-package main.java.org.example;
+package main.java.org.main;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -36,11 +36,9 @@ public class Program extends Tools {
     	if(consoleOut) {
 			if(StringUtils.isNotEmpty(text)) {
 				logger.error("Error: " + text);
-				logger.error("Exit");
-			} else {
-				logger.error("Exit");
 			}
-    	}
+			logger.error("Exit");
+		}
     	System.exit(1);
     }
     private void showInfo(String pathToConfigFiles, boolean replaceLoginString, String pathToConfigFile) {
@@ -219,7 +217,7 @@ public class Program extends Tools {
 		}
 		boolean foundError = false;
 		for(ConfigfileStatus configfileStatus: listFileStatus) {
-			if(! configfileStatus.valid()) {
+			if(configfileStatus != null && ! configfileStatus.valid()) {
 				foundError = true;
 				int index = listFileStatus.indexOf(configfileStatus);
 				if(consoleOut) {
@@ -229,8 +227,9 @@ public class Program extends Tools {
 		}
 		if(foundError){
 			System.exit(1);
+		} else {
+			run();
 		}
-    	run();
     }
     private int countFiles(String directory) {
     	return getConfigFilesFromFolder(directory).size();

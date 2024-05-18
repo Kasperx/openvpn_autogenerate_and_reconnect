@@ -1,5 +1,5 @@
 
-package main.java.org.example;
+package main.java.org.main;
 
 import java.io.File;
 import org.apache.logging.log4j.LogManager;
@@ -14,16 +14,16 @@ public class Main extends Tools
     private void showHelp ()
     {
     	logger.info("This program can find ovpn-config-files from a specific folder, read a random file from it and regenerate a new ovpn-config-file to the ovpn-working-dir.");
-    	logger.info("Syntax: Main [-h|-?|-help] [-path] [-replace]");
+    	logger.info("Syntax: Main [-h|-?|-help] [--path] [--replace] [--memory-file] [--config-file] [-replace] [-deactivate-ciphers]");
     	logger.info("Options:");
-    	logger.info("\t[-h|-help|-?] 	show this help and exit");
-    	logger.info("\t[--path]     	specific memory file with config-file-names. Default = '"
+    	logger.info("\t[-h|-help|-?]\t\t 	show this help and exit");
+    	logger.info("\t[--path]\t\t     	specific memory file with config-file-names. Default = '"
     			+ this.pathToConfigFiles + "'");
     	logger.info("\t[--memory-file]     	specific directory of config file with names. Default = '"
     			+ this.fileNameWithAllConfigs + "'");
     	logger.info("\t[--config-file]     	openvpn config file. Default = '"
     			+ this.openvpnConfigFile + "'");
-    	logger.info("\t[-replace]  	replace login string like 'auth <loginname>' in configfile. Default = '"
+    	logger.info("\t[-replace]\t\t\t  	replace login string like 'auth <loginname>' in configfile. Default = '"
     			+ this.replaceLoginString + "'");
     	logger.info("\t[-deactivate-ciphers]  	deactivate line with cipher info like 'data-ciphers AES-256-GCM' in configfile. Default = '"
     			+ this.deactivate_ciphers1 + "'");
