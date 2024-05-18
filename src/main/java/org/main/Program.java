@@ -36,11 +36,9 @@ public class Program extends Tools {
     	if(consoleOut) {
 			if(StringUtils.isNotEmpty(text)) {
 				logger.error("Error: " + text);
-				logger.error("Exit");
-			} else {
-				logger.error("Exit");
 			}
-    	}
+			logger.error("Exit");
+		}
     	System.exit(1);
     }
     private void showInfo(String pathToConfigFiles, boolean replaceLoginString, String pathToConfigFile) {
@@ -229,8 +227,9 @@ public class Program extends Tools {
 		}
 		if(foundError){
 			System.exit(1);
+		} else {
+			run();
 		}
-    	run();
     }
     private int countFiles(String directory) {
     	return getConfigFilesFromFolder(directory).size();
