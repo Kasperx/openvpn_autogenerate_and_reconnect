@@ -34,12 +34,12 @@ service=`service openvpn status`
 service_id=$?
 #echo $service_id
 iface1=ens18
-iface2=ens19
+#iface2=ens19
 
 # -n = string is not null
 # -z = string is null
 
-logfile=/home/pi/openvpn.log
+logfile=/home/admin/openvpn.log
 #logfile=openvpn.log
 #alias ping='ping -W 2 -I tun0 -c 1'
 #alias ping='fping -t500 -I tun0 -c 1'
@@ -51,6 +51,7 @@ date=$(date +%d.%m.%Y-%H.%M)
 web_address_1="web.de"
 web_address_2="gmx.de"
 date="$(date +%d.%m.%Y-%H.%M)"
+folder_scripts=~admin/bin/
 
 
 function recreate {
@@ -61,8 +62,8 @@ function recreate {
 	if [ "$1" = "-v" ]; then
 #		sudo java -jar /scripte/RegenerateOVPNConfigFile.jar -path /etc/openvpn/configs 2>&1 | tee -a $logfile
 #		sudo java -Dlog4j.configurationFile=bin/java/log4j.xml -jar bin/java/openvpn_autogenerate_and_reconnect-0.0.1-SNAPSHOT-jar-with-dependencies.jar -replace -v 2>&1 | tee -a $logfile
-		sudo java -Dlog4j.configurationFile=/home/pi/bin/java/log4j.xml \
-			-jar /home/pi/bin/java/openvpn_autogenerate_and_reconnect-0.0.1-SNAPSHOT-jar-with-dependencies.jar \
+		sudo java -Dlog4j.configurationFile=$folder_scripts/java/log4j.xml \
+			-jar $folder_scripts/java/openvpn_autogenerate_and_reconnect-0.0.1-SNAPSHOT-jar-with-dependencies.jar \
 			-v \
 			-deactivate-ciphers \
 			--config-file /etc/openvpn/openvpn.ovpn \
@@ -71,8 +72,8 @@ function recreate {
 	else
 #		sudo java -jar /scripte/RegenerateOVPNConfigFile.jar -path /etc/openvpn/configs >> $logfile 2>&1
 #                sudo java -Dlog4j.configurationFile=bin/java/log4j.xml -jar bin/java/openvpn_autogenerate_and_reconnect-0.0.1-SNAPSHOT-jar-with-dependencies.jar -replace -v >> $logfile 2>&1
-                sudo java -Dlog4j.configurationFile=/home/pi/bin/java/log4j.xml \
-			-jar /home/pi/bin/java/openvpn_autogenerate_and_reconnect-0.0.1-SNAPSHOT-jar-with-dependencies.jar \
+                sudo java -Dlog4j.configurationFile=$folder_scripts/java/log4j.xml \
+			-jar $folder_scripts/java/openvpn_autogenerate_and_reconnect-0.0.1-SNAPSHOT-jar-with-dependencies.jar \
 			-v \
 			-deactivate-ciphers \
 			--config-file /etc/openvpn/openvpn.ovpn \
@@ -90,12 +91,12 @@ function reconnect {
 	check_normal
         status=$?
         if [ $status -gt 0 ]; then
-                echo "No internet connection"
+                echo "No internet connection (via $iface1)"
 		exit
         fi
 	echo "Start: $(date +%d.%m.%Y-%H.%M)" | tee -a $logfile
 	echo "ip without open-vpn: " | tee -a $logfile
-	/home/pi/bin/ask_public_ip.sh | tee -a $logfile
+	$folder_scripts/ask_public_ip | tee -a $logfile
 #	echo "tun info: '$iface'" | tee -a $logfile
 #	echo "" | tee -a $logfile
 #	echo "" | tee -a $logfile
@@ -123,10 +124,10 @@ function reconnect {
 	sleep 20
 ### test
 	echo "ip with open-vpn: " | tee -a $logfile
-	/home/pi/bin/ask_public_ip.sh | tee -a $logfile
+	$folder_scripts/ask_public_ip | tee -a $logfile
 	echo "" | tee -a $logfile
 	echo "End" | tee -a $logfile
-	/home/pi/bin/dyndns_goip_update_ip.sh
+	$folder_scripts/dyndns_goip_update_ip
 
 	else
 
@@ -164,10 +165,10 @@ function reconnect {
 	sleep 20
 #	echo "" >> $logfile
 	echo "ip with open-vpn: " >> $logfile 2>&1
-	/home/pi/bin/ask_public_ip.sh >> $logfile 2>&1
+	$folder_scripts/ask_public_ip >> $logfile 2>&1
 	echo "" >> $logfile 2>&1
 	echo "End" >> $logfile 2>&1
-	/home/pi/bin/dyndns_goip_update_ip.sh >> /dev/null 2>&1
+	$folder_scripts/dyndns_goip_update_ip >> /dev/null 2>&1
 
 	fi
 
@@ -191,7 +192,7 @@ function check_normal {
 
 	else
 
-#		echo "No internet connection"
+#		echo "No internet connection (via $iface1)"
 		return 1
 
 	fi
@@ -277,7 +278,7 @@ function check_or_reconnect {
 		fi
 
 	else
-		echo "No internet connection"
+		echo "No internet connection (via $iface1)"
 	fi
 
 }
@@ -382,7 +383,7 @@ function restartOpenvpn {
 
 			echo "Start: $(date +%d.%m.%Y-%H.%M)" | tee -a $logfile
 			echo "ip without open-vpn: " | tee -a $logfile
-			/scripte/ask_public_ip.sh 2>&1 | tee -a $logfile
+			$folder_scripts/ask_public_ip 2>&1 | tee -a $logfile
 #sleep 2
 #exit
 			echo "stopping open-vpn"
@@ -399,9 +400,9 @@ function restartOpenvpn {
 			# time for reconnect
 			sleep 20
 			echo "ip with open-vpn: " | tee -a $logfile
-			/scripte/ask_public_ip.sh 2>&1 | tee -a $logfile
+			$folder_scripts/ask_public_ip 2>&1 | tee -a $logfile
 			echo "End" | tee -a $logfile
-			/scripte/dyndns_goip_update_ip.sh
+			$folder_scripts/dyndns_goip_update_ip
 			systemctl status openvpn
 #		else
 		fi
@@ -430,10 +431,10 @@ function restartOpenvpn {
 			sleep 20
 #			echo "" >> $logfile
 			echo "ip with open-vpn: " | tee -a $logfile
-			/home/pi/bin/ask_public_ip.sh | tee -a $logfile
+			$folder_scripts/ask_public_ip | tee -a $logfile
 			echo "" | tee -a $logfile
 			echo "End" | tee -a $logfile
-			/home/pi/bin/dyndns_goip_update_ip.sh
+			$folder_scripts/dyndns_goip_update_ip
 #		fi
 #	fi
 }
