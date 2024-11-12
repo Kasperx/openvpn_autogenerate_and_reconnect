@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class Program extends Tools {
-    public Program(){}
     private void showErrorAndExit(String text) {
     	if(consoleOut) {
 			if(StringUtils.isNotEmpty(text)) {
@@ -68,7 +67,6 @@ public class Program extends Tools {
     }
     void run(String pathToConfigFiles, boolean replaceLoginString, String pathToConfigFile) {
 
-    	//main = this;
     	if(consoleOut) {
     		showInfo(pathToConfigFiles, replaceLoginString, pathToConfigFile);
     	}
@@ -211,9 +209,9 @@ public class Program extends Tools {
 							StringColumn.create("Value", value),
 							StringColumn.create("Discription", info)
 			);
-	    	logger.info("");
+	    	logger.info("-");
 			logger.info(table.print());
-			logger.info("");
+			logger.info("-");
 		}
 		boolean foundError = false;
 		for(ConfigfileStatus configfileStatus: listFileStatus) {
