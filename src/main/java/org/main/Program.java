@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class Program extends Tools {
-    public Program(){}
     private void showErrorAndExit(String text) {
     	if(consoleOut) {
 			if(StringUtils.isNotEmpty(text)) {
@@ -68,7 +67,6 @@ public class Program extends Tools {
     }
     void run(String pathToConfigFiles, boolean replaceLoginString, String pathToConfigFile) {
 
-    	//main = this;
     	if(consoleOut) {
     		showInfo(pathToConfigFiles, replaceLoginString, pathToConfigFile);
     	}
@@ -211,9 +209,9 @@ public class Program extends Tools {
 							StringColumn.create("Value", value),
 							StringColumn.create("Discription", info)
 			);
-	    	logger.info("");
+	    	logger.info("-");
 			logger.info(table.print());
-			logger.info("");
+			logger.info("-");
 		}
 		boolean foundError = false;
 		for(ConfigfileStatus configfileStatus: listFileStatus) {
@@ -262,8 +260,7 @@ public class Program extends Tools {
 	private boolean hasDirFiles(String dirPath) {
 		return countFiles(dirPath) > 0;
 	}
-    private void run()
-    {
+    private void run() {
 		if(consoleOut) {
 			logger.info("Start. Make sure to have at least one ovpn-file in directory '" + pathToConfigFiles + "'");
 		}
@@ -354,12 +351,9 @@ public class Program extends Tools {
             return new ArrayList<String>();
         }
     }
-    private String getRandomFileAndRewriteToMemoryFile(String fileNameWithAllConfigs, List<String> list_configName, List<String> list_filesFromFolder)
-    {
+    private String getRandomFileAndRewriteToMemoryFile(String fileNameWithAllConfigs, List<String> list_configName, List<String> list_filesFromFolder) {
         String newConfigName = "";
-
-        try
-        {
+        try {
             if (list_configName != null && list_configName.size() > 1) {
             	int random = (int) ((Math.random() * (
                 		(list_configName.size() - 1) - 0)
@@ -422,12 +416,10 @@ public class Program extends Tools {
 		} catch (IOException e) {
 			logger.error(e);
 		}
-}
+	}
     
-    private void createNewOVPNFile(String newConfig)
-    {
-        try
-        {
+    private void createNewOVPNFile(String newConfig) {
+        try {
             // write new config file
             Files.copy(
             		Paths.get(newConfig),
@@ -500,8 +492,7 @@ public class Program extends Tools {
 			logger.error(e);
         }
     }
-    private void showHelp ()
-    {
+    private void showHelp () {
     	logger.info("This program can find ovpn-config-files from a specific folder, read a random file from it and regenerate a new ovpn-config-file to the ovpn-working-dir.");
     	logger.info("Syntax: Main [-h|-?|-help] [-path] [-replace]");
     	logger.info("Options:");
@@ -519,5 +510,4 @@ public class Program extends Tools {
     	logger.info("Exit");
 		System.exit(0);
     }
-    
 }
