@@ -128,6 +128,7 @@ function reconnect {
 	echo "" | tee -a $logfile
 	echo "End" | tee -a $logfile
 	$folder_scripts/dyndns_goip_update_ip
+#	sudo ip route add default via 192.168.1.254 dev ens18
 
 	else
 
@@ -169,10 +170,119 @@ function reconnect {
 	echo "" >> $logfile 2>&1
 	echo "End" >> $logfile 2>&1
 	$folder_scripts/dyndns_goip_update_ip >> /dev/null 2>&1
+#	sudo ip route add default via 192.168.1.254 dev ens18
 
 	fi
 
 }
+
+function add_route {
+	sudo ip route add default via 192.168.1.254 dev $iface1 | tee -a $logfile
+}
+
+
+function reconnect_test {
+
+	if [ "$1" = "-v" ]; then
+		echo "Start: $(date +%d.%m.%Y-%H.%M)" | tee -a $logfile
+		echo "ip without open-vpn: " | tee -a $logfile
+	else
+		echo "Start: $(date +%d.%m.%Y-%H.%M)" >> $logfile 2>&1
+                echo "ip without open-vpn: " >> $logfile 2>&1
+	fi
+	$folder_scripts/ask_public_ip | tee -a $logfile
+#	echo "tun info: '$iface'" | tee -a $logfile
+#	echo "" | tee -a $logfile
+#	echo "" | tee -a $logfile
+	if [ "$1" = "-v" ]; then
+		echo "Stopping service open-vpn ... " | tee -a $logfile
+	else
+		echo "Stopping service open-vpn ... " >> $logfile 2>&1
+	fi
+	sudo systemctl stop openvpn >/dev/null 2>&1
+	sleep 5
+	sudo killall openvpn >/dev/null 2>&1
+	sleep 10
+	### 1st check connection
+	check_normal
+        status=$?
+        if [ $status -gt 0 ]; then
+                echo "No internet connection (via $iface1)"
+		exit
+        fi
+
+#	#test
+	if [ "$1" = "-v" ]; then
+        #	echo "test to logfile $logfile" | tee -a $logfile
+	#	echo "File has ". grep -Rl "curl" ./ -c ."count of lines"
+		echo "vpn restart  ... $(date '+%d.%m.%Y-%H.%M.%S')" | tee -a $logfile
+		echo "reconnect..." | tee -a $logfile
+	else
+	#	echo "test to logfile $logfile" >> $logfile 2>&1
+	#       echo "File has ". grep -Rl "curl" ./ -c ."count of lines" >> $logfile 2>&1
+	        echo "vpn restart  ... $(date '+%d.%m.%Y-%H.%M.%S')" >> $logfile 2>&1
+	        echo "reconnect..." >> $logfile 2>&1
+	fi
+	add_route
+	sudo systemctl start openvpn@openvpn
+	sleep 5
+	check_openvpn
+        status=$?
+        if [ $status -gt 0 ]; then
+		if [ "$1" = "-v" ]; then
+	                echo "Something wrong with tun interface" | tee -a $logfile
+		else
+			echo "Something wrong with tun interface" >> $logfile 2>&1
+		fi
+		if [ "$1" = "-v" ]; then
+	        #	echo "test to logfile $logfile" | tee -a $logfile
+		#	echo "File has ". grep -Rl "curl" ./ -c ."count of lines"
+			echo "vpn restart  ... $(date '+%d.%m.%Y-%H.%M.%S')" | tee -a $logfile
+			echo "reconnect..." | tee -a $logfile
+		else
+		#	echo "test to logfile $logfile" >> $logfile 2>&1
+		#       echo "File has ". grep -Rl "curl" ./ -c ."count of lines" >> $logfile 2>&1
+		        echo "vpn restart  ... $(date '+%d.%m.%Y-%H.%M.%S')" >> $logfile 2>&1
+		        echo "reconnect..." >> $logfile 2>&1
+		fi
+#		sudo openvpn --config /etc/openvpn/openvpn.conf &
+#		sudo openvpn --config /etc/openvpn/openvpn.ovpn &
+		add_route
+		sudo systemctl start openvpn@openvpn
+		check_openvpn
+	        status=$?
+	        if [ $status -gt 0 ]; then
+			if [ "$1" = "-v" ]; then
+		                echo "Something wrong with tun interface" | tee -a $logfile
+		                echo "Exit" | tee -a $logfile
+			else
+				echo "Something wrong with tun interface" >> $logfile 2>&1
+				echo "Exit" >> $logfile 2>&1
+			fi
+			exit
+		fi
+        fi
+##	sudo openvpn --config /etc/openvpn/openvpn.conf >> /dev/null 2>&1 &
+#	# time for reconnect
+	sleep 20
+### test
+	if [ "$1" = "-v" ]; then
+		echo "ip with open-vpn: " | tee -a $logfile
+	else
+		echo "ip with open-vpn: " >> $logfile 2>&1
+	fi
+	$folder_scripts/ask_public_ip | tee -a $logfile
+	if [ "$1" = "-v" ]; then
+		echo "" | tee -a $logfile
+		echo "End" | tee -a $logfile
+	else
+		echo "" >> $logfile 2>&1
+		echo "End" >> $logfile 2>&1
+	fi
+	$folder_scripts/dyndns_goip_update_ip
+
+}
+
 
 #function check {
 #
@@ -247,7 +357,7 @@ function check_or_reconnect {
 	status=$?
 
 	if [ $status -eq 0 ]; then
-		echo "Internet connected"
+		echo "Internet connected with (via $iface1)"
 
 		check_openvpn
 		status=$?
@@ -279,6 +389,34 @@ function check_or_reconnect {
 
 	else
 		echo "No internet connection (via $iface1)"
+		check_openvpn
+		status=$?
+		if [ $status -eq 0 ]; then
+			echo "Everything ok, open-vpn connection alive"
+		elif [ $status -eq 1 ]; then
+	                echo "Something wrong with tun interface"
+
+			if [ "$var" = "auto" ]; then
+				if [ "$2" = "-v" ]; then
+					reconnect -v
+				else
+					reconnect
+				fi
+			fi
+
+		elif [ $status -eq 2 ]; then
+	                echo "interface alive, but vpn connection lost"
+
+			if [ "$var" = "auto" ]; then
+				if [ "$2" = "-v" ]; then
+					reconnect -v
+				else
+					reconnect
+				fi
+			fi
+
+		fi
+
 	fi
 
 }
@@ -442,13 +580,13 @@ function restartOpenvpn {
 if [ "$var" = "check" ] || [ "$var" = "auto" ];then
 
 	if [ "$var" = "check" ];then
-		if [ "$var2" = "test" ];then
+		if [ "$var2" = "-v" ];then
 			check_or_reconnect check -v
 		else
 			check_or_reconnect check
 		fi
 	elif [ "$var" = "auto" ];then
-		if [ "$var2" = "test" ];then
+		if [ "$var2" = "-v" ];then
 			check_or_reconnect auto -v
 		else
 			check_or_reconnect auto
@@ -460,10 +598,10 @@ elif [ "$var" = "reconnect" ] || [ "$var" = "2" ];then
 
 	if [ "$var2" = "-v" ];then
 		echo "####################################################" | tee -a $logfile
-		reconnect -v
+		reconnect_test -v
 	else
 		echo "####################################################" >> $logfile 2>&1
-		reconnect
+		reconnect_test
 	fi
 
 elif [ "$var" = "recreate" ] || [ "$var" = "1" ];then
@@ -473,11 +611,11 @@ elif [ "$var" = "recreate" ] || [ "$var" = "1" ];then
 		if [ "$var3" = "-v" ];then
 			echo "####################################################" | tee -a $logfile
 			recreate -v
-			reconnect -v
+			reconnect_test -v
 		else
 			echo "####################################################" >> $logfile 2>&1
 			recreate
-			reconnect
+			reconnect_test
 		fi
 
 	else
@@ -497,5 +635,45 @@ else
 	echo "No valid input."
 
 fi
+
+#case $var in
+#	"2" | "reconnect")
+#		case $var2 in
+#			"-v")
+#				echo "####################################################" | tee -a $logfile
+#		                reconnect_test -v
+#			;;
+#			*)
+#				echo "####################################################" >> $logfile 2>&1
+#		                reconnect_test
+#			;;
+#	"1" | "recreate")
+#		case $var2 in
+#			"2" | "reconnect")
+#				case $var3 in
+#					"-v")
+#						echo "####################################################" | tee -a $logfile
+#        			                recreate -v
+#	                        		reconnect_test -v
+#					;;
+#					*)
+#						echo "####################################################" >> $logfile 2>&1
+#				                recreate
+#				                reconnect_test
+#					;;
+#			*)
+#				case $var3 in
+#                                        "-v")
+#                                                echo "####################################################" | tee -a $logfile
+#                                                recreate -v
+#					;;
+#                                        *)
+#                                                echo "####################################################" >> $logfile 2>&1
+#                                                recreate
+#					;;
+#	*)
+#		echo "No valid input."
+#	;;
+#;;
 
 exit
